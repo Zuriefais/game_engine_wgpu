@@ -1,4 +1,7 @@
+use bytemuck::{Pod, Zeroable};
+use glam::{Vec2, Vec3};
 use log::info;
+use winit::event::WindowEvent;
 
 pub struct World {
     storage: Vec<Box<dyn WorldObject>>
@@ -12,8 +15,32 @@ impl World {
     }
 }
 
+impl Default for World {
+    fn default() -> Self {
+        Self { storage: Default::default() }
+    }
+}
+
 pub trait WorldObject {
     fn update(&mut self, delta_t: f32) {
         info!("running update delta_t: {}", delta_t);
     }
+
+    fn input(&mut self, event: &WindowEvent) {
+        info!("input for object {}, {:?}", self.get_name(), event)
+    }
+
+    fn get_pos(&self) -> Vec2;
+
+    fn render(&self) -> [InstanceData];
+
+    fn get_name(&self) -> String;
+}
+
+#[derive(Clone, Copy, Pod, Zeroable)]
+#[repr(C)]
+pub struct InstanceData {
+    pub position: Vec3,
+    pub scale: f32,
+    pub color: [f32; 4],
 }
