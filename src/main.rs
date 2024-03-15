@@ -1,9 +1,10 @@
 pub mod world;
 pub mod app_state;
-pub mod constants; 
+pub mod constants;
+pub mod objects;
 
-use std::env;
-use log::{error, info};
+use std::{env, time::Instant};
+use log::info;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -22,8 +23,11 @@ pub async fn run() {
 
     info!("Engine Start");
     let mut state = State::new(window).await;
-
+    let mut delta_t = 0f32;
+    
     event_loop.run(move |event, _, control_flow| {
+        
+        let start = Instant::now();
         match event {
             Event::WindowEvent {
                 ref event,
@@ -58,7 +62,7 @@ pub async fn run() {
                 _ => {}
             },
             Event::RedrawRequested(window_id) if window_id == state.window().id() => {
-                state.update();
+                state.update(delta_t);
                 match state.render() {
                     Ok(_) => {}
                     // Reconfigure the surface if lost
@@ -77,6 +81,7 @@ pub async fn run() {
 
             _ => {}
         }
+        delta_t = start.elapsed().as_secs_f32();
     });
 }
 

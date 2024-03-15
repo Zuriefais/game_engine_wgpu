@@ -4,7 +4,7 @@ use log::info;
 use winit::event::WindowEvent;
 
 pub struct World {
-    storage: Vec<Box<dyn WorldObject>>
+    pub storage: Vec<Box<dyn WorldObject>>
 }
 
 impl World {
@@ -23,7 +23,7 @@ impl Default for World {
 
 pub trait WorldObject {
     fn update(&mut self, delta_t: f32) {
-        info!("running update delta_t: {}", delta_t);
+        info!("running update for object: {}, delta_t: {}", self.get_name(), delta_t);
     }
 
     fn input(&mut self, event: &WindowEvent) {
@@ -32,7 +32,7 @@ pub trait WorldObject {
 
     fn get_pos(&self) -> Vec2;
 
-    fn render(&self) -> [InstanceData];
+    fn render(&self) -> Vec<InstanceData>;
 
     fn get_name(&self) -> String;
 }

@@ -2,7 +2,7 @@ use log::info;
 use wgpu::util::DeviceExt;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{constants::{INDICES, VERTICES}, Vertex};
+use crate::{constants::{INDICES, VERTICES}, objects::Player, world::{World, WorldObject}, Vertex};
 
 pub struct State {
     pub surface: wgpu::Surface,
@@ -16,6 +16,7 @@ pub struct State {
     pub index_buffer: wgpu::Buffer, 
     pub num_vertices: u32,
     pub num_indices: u32,
+    pub world: World
 }
 
 impl State {
@@ -150,6 +151,13 @@ impl State {
         let num_vertices = VERTICES.len() as u32;
         let num_indices = INDICES.len() as u32;
 
+        let mut world = World::default();
+
+        let player_obj: Box<dyn WorldObject> = Box::new(Player { name: "Main player".to_string() });
+
+        world.storage.push(player_obj);
+        
+
         return Self {
             surface,
             device,
@@ -162,6 +170,7 @@ impl State {
             index_buffer,
             num_vertices,
             num_indices,
+            world,
         };
     }
 
@@ -182,7 +191,11 @@ impl State {
         false
     }
 
-    pub fn update(&mut self) {}
+    pub fn update(&mut self, delta_t: f32) {
+        for obj in self.world.storage.iter_mut() {
+            obj.as_mut().update(delta_t)
+        }
+    }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
