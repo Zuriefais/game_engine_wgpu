@@ -3,6 +3,10 @@ use glam::{Vec2, Vec3};
 use log::info;
 use winit::event::WindowEvent;
 
+pub struct WorldObjectContainer {
+    pub obj: Box<dyn WorldObject>,
+}
+
 pub struct World {
     pub storage: Vec<Box<dyn WorldObject>>,
 }
@@ -39,7 +43,24 @@ pub trait WorldObject {
     }
 
     fn input(&mut self, delta_t: f32, event: &WindowEvent) {
-        info!("input for object: {}, {:?}", self.get_name(), event)
+        match event {
+            WindowEvent::KeyboardInput { input, .. } => {
+                info!(
+                    "input for object: {}, key pressed: {:?}",
+                    self.get_name(),
+                    input
+                )
+            }
+
+            WindowEvent::CursorMoved { position, .. } => {
+                info!(
+                    "input for object: {}, mouse pos: {:?}",
+                    self.get_name(),
+                    position
+                )
+            }
+            _ => {}
+        }
     }
 
     fn get_pos(&self) -> Vec2;
