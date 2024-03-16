@@ -1,8 +1,7 @@
-
 use crate::world::WorldObject;
 
 pub struct Player {
-    pub(crate) name: String
+    pub(crate) name: String,
 }
 
 impl WorldObject for Player {

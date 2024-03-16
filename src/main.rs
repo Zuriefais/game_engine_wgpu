@@ -1,10 +1,10 @@
-pub mod world;
 pub mod app_state;
 pub mod constants;
 pub mod objects;
+pub mod world;
 
-use std::{env, time::Instant};
 use log::info;
+use std::{env, time::Instant};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -24,9 +24,8 @@ pub async fn run() {
     info!("Engine Start");
     let mut state = State::new(window).await;
     let mut delta_t = 0f32;
-    
+
     event_loop.run(move |event, _, control_flow| {
-        
         let start = Instant::now();
         match event {
             Event::WindowEvent {
@@ -50,16 +49,9 @@ pub async fn run() {
                     // new_inner_size is &&mut so we have to dereference it twice
                     state.resize(**new_inner_size);
                 }
-                WindowEvent::CursorMoved { position, .. } => {
-                    // Update the stored position
-
-                    info!("{:?}", position);
-
-                    // Example usage: Perform an action based on cursor position
-                    // ... (e.g., modify UI elements)
+                event => {
+                    state.input(event, delta_t);
                 }
-
-                _ => {}
             },
             Event::RedrawRequested(window_id) if window_id == state.window().id() => {
                 state.update(delta_t);
@@ -88,8 +80,6 @@ pub async fn run() {
 fn main() {
     pollster::block_on(run());
 }
-
-
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]

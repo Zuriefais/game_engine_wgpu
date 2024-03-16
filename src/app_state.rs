@@ -2,7 +2,12 @@ use log::info;
 use wgpu::util::DeviceExt;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{constants::{INDICES, VERTICES}, objects::Player, world::{World, WorldObject}, Vertex};
+use crate::{
+    constants::{INDICES, VERTICES},
+    objects::Player,
+    world::{World, WorldObject},
+    Vertex,
+};
 
 pub struct State {
     pub surface: wgpu::Surface,
@@ -13,10 +18,10 @@ pub struct State {
     pub window: Window,
     pub render_pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer, 
+    pub index_buffer: wgpu::Buffer,
     pub num_vertices: u32,
     pub num_indices: u32,
-    pub world: World
+    pub world: World,
 }
 
 impl State {
@@ -140,23 +145,22 @@ impl State {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        let index_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(INDICES),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        );
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
 
         let num_vertices = VERTICES.len() as u32;
         let num_indices = INDICES.len() as u32;
 
         let mut world = World::default();
 
-        let player_obj: Box<dyn WorldObject> = Box::new(Player { name: "Main player".to_string() });
+        let player_obj: Box<dyn WorldObject> = Box::new(Player {
+            name: "Main player".to_string(),
+        });
 
         world.storage.push(player_obj);
-        
 
         return Self {
             surface,
@@ -187,7 +191,8 @@ impl State {
         }
     }
 
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
+    pub fn input(&mut self, event: &WindowEvent, delta_t: f32) -> bool {
+        self.world.input(delta_t, event);
         false
     }
 
@@ -232,7 +237,8 @@ impl State {
 
             render_pass.set_pipeline(&self.render_pipeline); // 2.
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..self.num_vertices, 0..1);render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.draw(0..self.num_vertices, 0..1);
+            render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
