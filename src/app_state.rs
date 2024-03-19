@@ -26,6 +26,7 @@ pub struct State {
     pub camera: Camera,
     pub camera_buffer: wgpu::Buffer,
     pub camera_bind_group: wgpu::BindGroup,
+    pub camera_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl State {
@@ -220,6 +221,7 @@ impl State {
             camera,
             camera_buffer,
             camera_bind_group,
+            camera_bind_group_layout,
         };
     }
 
@@ -233,6 +235,29 @@ impl State {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+            self.camera = Camera::create_camera_from_screen_size(
+                self.size.width as f32,
+                self.size.height as f32,
+                self.camera.near,
+                self.camera.far,
+            );
+
+            self.camera_buffer =
+                self.device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("Camera Buffer"),
+                        contents: bytemuck::cast_slice(&[self.camera.uniform]),
+                        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                    });
+
+            self.camera_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &self.camera_bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: self.camera_buffer.as_entire_binding(),
+                }],
+                label: Some("camera_bind_group"),
+            });
         }
     }
 
