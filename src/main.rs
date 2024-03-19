@@ -1,4 +1,5 @@
 pub mod app_state;
+pub mod camera;
 pub mod constants;
 pub mod objects;
 pub mod world;
@@ -19,7 +20,10 @@ pub async fn run() {
     }
     env_logger::init();
     let event_loop = EventLoop::new();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = WindowBuilder::new()
+        .with_title("Wgpu engine by Zuriefais")
+        .build(&event_loop)
+        .unwrap();
 
     info!("Engine Start");
     let mut state = State::new(window).await;

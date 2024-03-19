@@ -1,8 +1,15 @@
 {
     "cSpell.words": [
         "bytemuck",
+        "cgmath",
+        "OPENGL",
+        "repr",
         "Vulkan",
         "wgpu",
-        "winit"
-    ]
+        "wgsl",
+        "winit",
+        "Zuriefais"
+    ],
+    "editor.fontFamily": "JetBrains Mono",
+    "editor.fontLigatures": true,
 }

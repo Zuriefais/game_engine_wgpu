@@ -18,10 +18,11 @@ impl World {
         }
     }
 
-    pub fn input(&mut self, delta_t: f32, event: &WindowEvent) {
+    pub fn input(&mut self, delta_t: f32, event: &WindowEvent) -> bool {
         for object in self.storage.iter_mut() {
-            object.input(delta_t, event)
+            object.input(delta_t, event);
         }
+        true
     }
 }
 
@@ -49,7 +50,15 @@ pub trait WorldObject {
                     "input for object: {}, key pressed: {:?}",
                     self.get_name(),
                     input
-                )
+                );
+            }
+            WindowEvent::MouseInput { state, button, .. } => {
+                info!(
+                    "input for object: {}, mouse button pressed: {:?}, state: {:?}",
+                    self.get_name(),
+                    button,
+                    state
+                );
             }
 
             WindowEvent::CursorMoved { position, .. } => {
@@ -57,7 +66,7 @@ pub trait WorldObject {
                     "input for object: {}, mouse pos: {:?}",
                     self.get_name(),
                     position
-                )
+                );
             }
             _ => {}
         }
