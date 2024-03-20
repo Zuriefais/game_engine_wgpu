@@ -253,22 +253,11 @@ impl State {
     }
 
     pub fn update_camera_buffer(&mut self) {
-        self.camera_buffer = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Camera Buffer"),
-                contents: bytemuck::cast_slice(&[self.camera.uniform]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            });
-
-        self.camera_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &self.camera_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: self.camera_buffer.as_entire_binding(),
-            }],
-            label: Some("camera_bind_group"),
-        });
+        self.queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera.uniform]),
+        );
     }
 
     pub fn input(&mut self, event: &WindowEvent, delta_t: f32) -> bool {
