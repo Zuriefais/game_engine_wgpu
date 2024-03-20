@@ -51,16 +51,14 @@ impl Camera {
         far: f32,
         zoom_factor: f32,
     ) -> CameraUniform {
+        let left = left + left * zoom_factor;
+        let right = right + right * zoom_factor;
+        let bottom = bottom + bottom * zoom_factor;
+        let top = top + top * zoom_factor;
+
         CameraUniform {
-            view_proj: Mat4::orthographic_rh(
-                left + left * zoom_factor,
-                right + right * zoom_factor,
-                bottom + bottom * zoom_factor,
-                top + top * zoom_factor,
-                near,
-                far,
-            )
-            .to_cols_array_2d(),
+            view_proj: Mat4::orthographic_rh(left, right, bottom, top, near, far)
+                .to_cols_array_2d(),
         }
     }
 
