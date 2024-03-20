@@ -1,6 +1,10 @@
+use glam::Vec2;
 use log::info;
 use wgpu::util::DeviceExt;
-use winit::{event::WindowEvent, window::Window};
+use winit::{
+    event::{MouseScrollDelta, VirtualKeyCode, WindowEvent},
+    window::Window,
+};
 
 use crate::{
     camera::Camera,
@@ -188,6 +192,8 @@ impl State {
             size.height as f32,
             0.1,
             100.0,
+            0.0,
+            Vec2::ZERO,
         );
 
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -240,29 +246,69 @@ impl State {
                 self.size.height as f32,
                 self.camera.near,
                 self.camera.far,
+                self.camera.zoom_factor,
+                self.camera.position,
             );
-
-            self.camera_buffer =
-                self.device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some("Camera Buffer"),
-                        contents: bytemuck::cast_slice(&[self.camera.uniform]),
-                        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                    });
-
-            self.camera_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.camera_bind_group_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: self.camera_buffer.as_entire_binding(),
-                }],
-                label: Some("camera_bind_group"),
-            });
         }
+    }
+
+    pub fn update_camera_buffer(&mut self) {
+        self.camera_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Camera Buffer"),
+                contents: bytemuck::cast_slice(&[self.camera.uniform]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
+
+        self.camera_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &self.camera_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: self.camera_buffer.as_entire_binding(),
+            }],
+            label: Some("camera_bind_group"),
+        });
     }
 
     pub fn input(&mut self, event: &WindowEvent, delta_t: f32) -> bool {
         self.world.input(delta_t, event);
+
+        if let WindowEvent::MouseWheel { delta, .. } = event {
+            if let MouseScrollDelta::LineDelta(_, scrolled) = delta {
+                info!("scrolled: {}", scrolled);
+
+                if scrolled > &0.0 {
+                    self.camera.zoom_factor -= 0.01;
+                } else {
+                    self.camera.zoom_factor += 0.01;
+                }
+                self.camera.update_matrix();
+            }
+        }
+
+        if let WindowEvent::KeyboardInput { input, .. } = event {
+            let mut direction = Vec2::ZERO;
+            match input.virtual_keycode {
+                Some(VirtualKeyCode::W) => {
+                    direction.y = 1.0;
+                }
+                Some(VirtualKeyCode::A) => {
+                    direction.x = -1.0;
+                }
+                Some(VirtualKeyCode::S) => {
+                    direction.y = -1.0;
+                }
+                Some(VirtualKeyCode::D) => {
+                    direction.x = 1.0;
+                }
+                _ => {}
+            }
+            self.camera.position += direction * 10.0;
+            self.camera.update_matrix();
+
+            info!("{}", self.camera.position)
+        }
         false
     }
 
@@ -273,6 +319,7 @@ impl State {
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+        self.update_camera_buffer();
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
