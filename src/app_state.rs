@@ -274,6 +274,7 @@ impl State {
                     self.camera.zoom_factor += 0.01;
                 }
                 self.camera.update_matrix();
+                self.update_camera_buffer();
             }
         }
 
@@ -297,7 +298,8 @@ impl State {
             self.camera.position += direction.normalize() * 0.9;
             self.camera.update_matrix();
 
-            info!("{}", self.camera.position)
+            info!("{}", self.camera.position);
+            self.update_camera_buffer();
         }
 
         if let WindowEvent::CursorMoved { position, .. } = event {
