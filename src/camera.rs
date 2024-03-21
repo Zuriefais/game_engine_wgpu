@@ -34,7 +34,7 @@ impl Camera {
         Self {
             uniform: CameraUniform {
                 view_proj: Mat4::ZERO.to_cols_array_2d(),
-                position: position.extend(0f32).extend(0f32),
+                position: ((position / zoom_factor).extend(0f32).extend(0f32)),
             },
             right,
             left,
@@ -66,7 +66,7 @@ impl Camera {
             self.near,
             self.far,
         );
-        
+
         projection_matrix //* transform_matrix
     }
 
@@ -89,7 +89,7 @@ impl Camera {
     pub fn update_matrix(&mut self) {
         self.uniform = CameraUniform {
             view_proj: self.create_matrix().to_cols_array_2d(),
-            position: self.position.extend(0f32).extend(0f32),
+            position: ((self.position / self.zoom_factor).extend(0f32).extend(0f32)),
         }
     }
 

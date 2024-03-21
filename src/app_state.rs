@@ -281,20 +281,20 @@ impl State {
             let mut direction = Vec2::ZERO;
             match input.virtual_keycode {
                 Some(VirtualKeyCode::W) => {
-                    direction.y = 0.001;
+                    direction.y = 1.0;
                 }
                 Some(VirtualKeyCode::A) => {
-                    direction.x = -0.001;
+                    direction.x = -1.0;
                 }
                 Some(VirtualKeyCode::S) => {
-                    direction.y = -0.001;
+                    direction.y = -1.0;
                 }
                 Some(VirtualKeyCode::D) => {
-                    direction.x = 0.001;
+                    direction.x = 1.0;
                 }
                 _ => {}
             }
-            self.camera.position += direction.normalize() * 1.5;
+            self.camera.position += direction.normalize() * 0.9;
             self.camera.update_matrix();
 
             info!("{}", self.camera.position)
