@@ -16,7 +16,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = model.color;
-    out.clip_position = vec4<f32>(model.position, 1.0) * camera.view_proj;
+    out.clip_position = (vec4<f32>(model.position, 1.0) - camera.position) * camera.view_proj;
     return out;
 }
 
@@ -29,6 +29,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
 struct CameraUniform {
     view_proj: mat4x4f,
-};
+    position: vec4<f32>,
+    //position: vec2f,
+}
 @group(0) @binding(0) // 1.
 var<uniform> camera: CameraUniform;

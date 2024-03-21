@@ -1,4 +1,4 @@
-use glam::Vec2;
+use glam::{Vec2, Vec4, Vec4Swizzles};
 use log::info;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -249,6 +249,7 @@ impl State {
                 self.camera.zoom_factor,
                 self.camera.position,
             );
+            self.update_camera_buffer();
         }
     }
 
@@ -280,23 +281,36 @@ impl State {
             let mut direction = Vec2::ZERO;
             match input.virtual_keycode {
                 Some(VirtualKeyCode::W) => {
-                    direction.y = 1.0;
+                    direction.y = 0.001;
                 }
                 Some(VirtualKeyCode::A) => {
-                    direction.x = -1.0;
+                    direction.x = -0.001;
                 }
                 Some(VirtualKeyCode::S) => {
-                    direction.y = -1.0;
+                    direction.y = -0.001;
                 }
                 Some(VirtualKeyCode::D) => {
-                    direction.x = 1.0;
+                    direction.x = 0.001;
                 }
                 _ => {}
             }
-            self.camera.position += direction * 10.0;
+            self.camera.position += direction.normalize() * 1.5;
             self.camera.update_matrix();
 
             info!("{}", self.camera.position)
+        }
+
+        if let WindowEvent::CursorMoved { position, .. } = event {
+            let position_in_game = {
+                self.camera.get_matrix().mul_vec4(Vec4::new(
+                    position.x as f32,
+                    position.y as f32,
+                    0.0,
+                    0.0,
+                ))
+            };
+
+            info!("mouse pos in game: {}", position_in_game.xy())
         }
         false
     }

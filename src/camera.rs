@@ -1,4 +1,4 @@
-use glam::{Mat4, Vec2};
+use glam::{Mat4, Vec2, Vec4};
 
 pub struct Camera {
     pub uniform: CameraUniform,
@@ -16,6 +16,8 @@ pub struct Camera {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
     pub view_proj: [[f32; 4]; 4],
+    pub position: Vec4,
+    //pub position: [f32; 2],
 }
 
 impl Camera {
@@ -30,7 +32,10 @@ impl Camera {
         position: Vec2,
     ) -> Self {
         Self {
-            uniform: Camera::create_matrix(right, left, top, bottom, near, far, zoom_factor),
+            uniform: CameraUniform {
+                view_proj: Mat4::ZERO.to_cols_array_2d(),
+                position: position.extend(0f32).extend(0f32),
+            },
             right,
             left,
             top,
@@ -42,24 +47,27 @@ impl Camera {
         }
     }
 
-    pub fn create_matrix(
-        right: f32,
-        left: f32,
-        top: f32,
-        bottom: f32,
-        near: f32,
-        far: f32,
-        zoom_factor: f32,
-    ) -> CameraUniform {
-        let left = left + left * zoom_factor;
-        let right = right + right * zoom_factor;
-        let bottom = bottom + bottom * zoom_factor;
-        let top = top + top * zoom_factor;
-
-        CameraUniform {
-            view_proj: Mat4::orthographic_rh(left, right, bottom, top, near, far)
-                .to_cols_array_2d(),
+    pub fn create_matrix(&self) -> Mat4 {
+        let mut zoom_factor = self.zoom_factor;
+        if zoom_factor == 0.0 {
+            zoom_factor = 1.0;
         }
+
+        let adjusted_left = self.left + (self.left * zoom_factor);
+        let adjusted_right = self.right + (self.right * zoom_factor);
+        let adjusted_bottom = self.bottom + (self.bottom * zoom_factor);
+        let adjusted_top = self.top + (self.top * zoom_factor);
+
+        let projection_matrix = Mat4::orthographic_lh(
+            adjusted_left,
+            adjusted_right,
+            adjusted_bottom,
+            adjusted_top,
+            self.near,
+            self.far,
+        );
+        
+        projection_matrix //* transform_matrix
     }
 
     pub fn create_camera_from_screen_size(
@@ -79,14 +87,13 @@ impl Camera {
     }
 
     pub fn update_matrix(&mut self) {
-        self.uniform = Camera::create_matrix(
-            self.right,
-            self.left,
-            self.top,
-            self.bottom,
-            self.near,
-            self.far,
-            self.zoom_factor,
-        )
+        self.uniform = CameraUniform {
+            view_proj: self.create_matrix().to_cols_array_2d(),
+            position: self.position.extend(0f32).extend(0f32),
+        }
+    }
+
+    pub fn get_matrix(&self) -> Mat4 {
+        self.create_matrix()
     }
 }
