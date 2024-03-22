@@ -28,9 +28,13 @@ impl Camera {
         bottom: f32,
         near: f32,
         far: f32,
-        zoom_factor: f32,
+        mut zoom_factor: f32,
         position: Vec2,
     ) -> Self {
+        if zoom_factor == 0.0 {
+            zoom_factor = 1.0;
+        }
+
         Self {
             uniform: CameraUniform {
                 view_proj: Mat4::ZERO.to_cols_array_2d(),

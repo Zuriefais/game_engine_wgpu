@@ -11,3 +11,6 @@ wgpu = "0.18"
 pollster = "0.3.0"
 glam = {version = "0.26.0", features = ["bytemuck"]}
 bytemuck = {version = "1.14.3", features = ["derive"]}
+
+[build]
+rustflags = ["-Z", "threads=8"]

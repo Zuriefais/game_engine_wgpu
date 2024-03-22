@@ -249,6 +249,7 @@ impl State {
                 self.camera.zoom_factor,
                 self.camera.position,
             );
+            self.camera.update_matrix();
             self.update_camera_buffer();
         }
     }
@@ -295,11 +296,13 @@ impl State {
                 }
                 _ => {}
             }
-            self.camera.position += direction.normalize() * 0.9;
-            self.camera.update_matrix();
+            if direction != Vec2::ZERO {
+                self.camera.position += direction.normalize() * 0.9;
+                self.camera.update_matrix();
 
-            info!("{}", self.camera.position);
-            self.update_camera_buffer();
+                info!("{}", self.camera.position);
+                self.update_camera_buffer();
+            }
         }
 
         if let WindowEvent::CursorMoved { position, .. } = event {
