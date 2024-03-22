@@ -7,7 +7,7 @@ edition = "2021"
 winit = "0.28"
 env_logger = "0.11.3"
 log = "0.4"
-wgpu = "0.18"
+wgpu = {version = "0.18", features = ["glsl"]}
 pollster = "0.3.0"
 glam = {version = "0.26.0", features = ["bytemuck"]}
 bytemuck = {version = "1.14.3", features = ["derive"]}
