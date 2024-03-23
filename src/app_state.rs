@@ -215,24 +215,24 @@ impl State {
 
         let instances = vec![
             InstanceData {
-                position: Vec3::new(0.0, 0.0, 0.0),
+                position: Vec2::new(0.0, 0.0),
                 scale: 5.0,
-                color: [1.0, 0.0, 0.0, 0.0],
+                color: [1.0, 0.0, 0.0, 1.0],
             },
             InstanceData {
-                position: Vec3::new(0.0, 10.0, 0.0),
+                position: Vec2::new(0.0, 1.0),
                 scale: 5.0,
-                color: [1.0, 0.0, 0.0, 0.0],
+                color: [1.0, 0.0, 0.0, 1.0],
             },
             InstanceData {
-                position: Vec3::new(0.0, -10.0, 0.0),
+                position: Vec2::new(0.0, 2.0),
                 scale: 5.0,
-                color: [1.0, 0.0, 0.0, 0.0],
+                color: [1.0, 0.0, 0.0, 1.0],
             },
             InstanceData {
-                position: Vec3::new(0.0, 30.0, 0.0),
+                position: Vec2::new(0.0, 3.0),
                 scale: 5.0,
-                color: [1.0, 0.0, 0.0, 0.0],
+                color: [1.0, 0.0, 0.0, 1.0],
             },
         ];
 

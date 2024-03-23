@@ -82,7 +82,7 @@ pub trait WorldObject {
 #[derive(Clone, Copy, Pod, Zeroable)]
 #[repr(C)]
 pub struct InstanceData {
-    pub position: Vec3,
+    pub position: Vec2,
     pub scale: f32,
     pub color: [f32; 4],
 }
@@ -104,7 +104,7 @@ impl InstanceData {
                     // While our vertex shader only uses locations 0, and 1 now, in later tutorials, we'll
                     // be using 2, 3, and 4, for Vertex. We'll start at slot 5, not conflict with them later
                     shader_location: 5,
-                    format: wgpu::VertexFormat::Float32x3,
+                    format: wgpu::VertexFormat::Float32x2,
                 },
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
