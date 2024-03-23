@@ -1,3 +1,4 @@
+use crate::utils::*;
 use glam::{Vec2, Vec3, Vec4, Vec4Swizzles};
 use log::info;
 use wgpu::util::DeviceExt;
@@ -9,8 +10,9 @@ use winit::{
 use crate::{
     camera::Camera,
     constants::{INDICES, VERTICES},
+    instance_data::InstanceData,
     objects::Player,
-    world::{InstanceData, World, WorldObject},
+    world::{World, WorldObject},
     Vertex,
 };
 
@@ -222,7 +224,7 @@ impl State {
             InstanceData {
                 position: Vec2::new(0.0, 1.0),
                 scale: 5.0,
-                color: [1.0, 0.0, 0.0, 1.0],
+                color: [0.0, 1.0, 1.0, 0.5],
             },
             InstanceData {
                 position: Vec2::new(0.0, 2.0),
@@ -288,6 +290,18 @@ impl State {
     }
 
     pub fn update_camera_buffer(&mut self) {
+        for instance in self.instances.iter() {
+            // info!(
+            //     "instance pos in game: {}, on screen: {}",
+            //     instance.position,
+            //     get_screen_pos(
+            //         self.camera.get_matrix(),
+            //         self.camera.position,
+            //         instance.position,
+            //         self.size
+            //     )
+            // )
+        }
         self.queue.write_buffer(
             &self.camera_buffer,
             0,
@@ -400,7 +414,6 @@ impl State {
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-
             render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
         }
 

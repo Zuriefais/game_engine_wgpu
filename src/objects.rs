@@ -12,7 +12,7 @@ impl WorldObject for Player {
         todo!()
     }
 
-    fn render(&self) -> Vec<crate::world::InstanceData> {
+    fn render(&self) -> Vec<crate::instance_data::InstanceData> {
         todo!()
     }
 

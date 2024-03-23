@@ -1,7 +1,9 @@
 pub mod app_state;
 pub mod camera;
 pub mod constants;
+pub mod instance_data;
 pub mod objects;
+pub mod utils;
 pub mod world;
 
 use log::info;
@@ -89,7 +91,6 @@ fn main() {
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     position: [f32; 3],
-    color: [f32; 3],
 }
 
 impl Vertex {
