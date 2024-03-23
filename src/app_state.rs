@@ -1,4 +1,4 @@
-use glam::{Vec2, Vec4, Vec4Swizzles};
+use glam::{Vec2, Vec3, Vec4, Vec4Swizzles};
 use log::info;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -10,7 +10,7 @@ use crate::{
     camera::Camera,
     constants::{INDICES, VERTICES},
     objects::Player,
-    world::{World, WorldObject},
+    world::{InstanceData, World, WorldObject},
     Vertex,
 };
 
@@ -31,6 +31,8 @@ pub struct State {
     pub camera_buffer: wgpu::Buffer,
     pub camera_bind_group: wgpu::BindGroup,
     pub camera_bind_group_layout: wgpu::BindGroupLayout,
+    pub instances: Vec<InstanceData>,
+    pub instance_buffer: wgpu::Buffer,
 }
 
 impl State {
@@ -129,8 +131,8 @@ impl State {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main",     // 1.
-                buffers: &[Vertex::desc()], // 2.
+                entry_point: "vs_main",                           // 1.
+                buffers: &[Vertex::desc(), InstanceData::desc()], // 2.
             },
             fragment: Some(wgpu::FragmentState {
                 // 3.
@@ -211,6 +213,35 @@ impl State {
             label: Some("camera_bind_group"),
         });
 
+        let instances = vec![
+            InstanceData {
+                position: Vec3::new(0.0, 0.0, 0.0),
+                scale: 5.0,
+                color: [1.0, 0.0, 0.0, 0.0],
+            },
+            InstanceData {
+                position: Vec3::new(0.0, 10.0, 0.0),
+                scale: 5.0,
+                color: [1.0, 0.0, 0.0, 0.0],
+            },
+            InstanceData {
+                position: Vec3::new(0.0, -10.0, 0.0),
+                scale: 5.0,
+                color: [1.0, 0.0, 0.0, 0.0],
+            },
+            InstanceData {
+                position: Vec3::new(0.0, 30.0, 0.0),
+                scale: 5.0,
+                color: [1.0, 0.0, 0.0, 0.0],
+            },
+        ];
+
+        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Instance Buffer"),
+            contents: bytemuck::cast_slice(&instances),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
         return Self {
             surface,
             device,
@@ -228,6 +259,8 @@ impl State {
             camera_buffer,
             camera_bind_group,
             camera_bind_group_layout,
+            instances,
+            instance_buffer,
         };
     }
 
@@ -365,8 +398,10 @@ impl State {
             render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
         }
 
         // submit will accept anything that implements IntoIter
