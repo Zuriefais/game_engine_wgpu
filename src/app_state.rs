@@ -35,6 +35,7 @@ pub struct State {
     pub camera_bind_group_layout: wgpu::BindGroupLayout,
     pub instances: Vec<InstanceData>,
     pub instance_buffer: wgpu::Buffer,
+    pub instance_buffer_len: usize,
 }
 
 impl State {
@@ -215,34 +216,27 @@ impl State {
             label: Some("camera_bind_group"),
         });
 
-        let instances = vec![
-            InstanceData {
-                position: Vec2::new(0.0, 0.0),
-                scale: 5.0,
-                color: [1.0, 0.0, 0.0, 1.0],
-            },
-            InstanceData {
-                position: Vec2::new(0.0, 1.0),
-                scale: 5.0,
-                color: [0.0, 1.0, 1.0, 0.5],
-            },
-            InstanceData {
-                position: Vec2::new(0.0, 2.0),
-                scale: 5.0,
-                color: [1.0, 0.0, 0.0, 1.0],
-            },
-            InstanceData {
-                position: Vec2::new(0.0, 3.0),
-                scale: 5.0,
-                color: [1.0, 0.0, 0.0, 1.0],
-            },
-        ];
+        let instances = {
+            let mut instances = vec![];
+            for x in -10..10 {
+                for y in -10..10 {
+                    instances.push(InstanceData {
+                        position: Vec2::new(x as f32, y as f32),
+                        scale: 1.0,
+                        color: [0.0, 1.0 / (x as u32) as f32, 0.0, 1.0],
+                    })
+                }
+            }
+            instances
+        };
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             contents: bytemuck::cast_slice(&instances),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST, // Add COPY_DST
         });
+
+        let instance_buffer_len = instances.len();
 
         return Self {
             surface,
@@ -263,6 +257,7 @@ impl State {
             camera_bind_group_layout,
             instances,
             instance_buffer,
+            instance_buffer_len,
         };
     }
 
@@ -306,6 +301,44 @@ impl State {
             &self.camera_buffer,
             0,
             bytemuck::cast_slice(&[self.camera.uniform]),
+        );
+    }
+
+    pub fn update_instance_buffer(&mut self) {
+        let mut game_objects = vec![];
+
+        // Collect instance data from objects (consider referencing specific data)
+        for obj in self.world.storage.iter() {
+            game_objects.append(&mut obj.render()); // Hypothetical method
+        }
+
+        let instance_data_size = std::mem::size_of::<InstanceData>();
+
+        let instances_num = self.instances.len() + game_objects.len();
+
+        if instances_num > self.instance_buffer_len {
+            let new_size = instance_data_size * instances_num;
+
+            self.instance_buffer.destroy();
+            self.instance_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Instance Buffer"),
+                size: new_size as u64,
+                usage: wgpu::BufferUsages::VERTEX
+                    | wgpu::BufferUsages::COPY_DST
+                    | wgpu::BufferUsages::STORAGE, // Add STORAGE if needed
+                mapped_at_creation: false,
+            })
+        }
+
+        let mut instances_to_render = vec![];
+
+        instances_to_render.append(&mut self.instances);
+        instances_to_render.append(&mut game_objects);
+
+        self.queue.write_buffer(
+            &self.instance_buffer,
+            0,
+            bytemuck::cast_slice(&instances_to_render),
         );
     }
 
@@ -375,6 +408,7 @@ impl State {
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         self.update_camera_buffer();
+        self.update_instance_buffer();
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
@@ -414,7 +448,7 @@ impl State {
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instance_buffer_len as _);
         }
 
         // submit will accept anything that implements IntoIter

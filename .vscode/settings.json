@@ -12,4 +12,7 @@
     ],
     "editor.fontFamily": "JetBrains Mono",
     "editor.fontLigatures": true,
+    "rust-analyzer.linkedProjects": [
+        "./Cargo.toml"
+    ],
 }

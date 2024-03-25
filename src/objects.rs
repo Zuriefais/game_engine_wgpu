@@ -1,7 +1,8 @@
+use glam::Vec2;
 use log::info;
 use winit::event::WindowEvent;
 
-use crate::world::WorldObject;
+use crate::{instance_data::InstanceData, world::WorldObject};
 
 pub struct Player {
     pub(crate) name: String,
@@ -13,7 +14,11 @@ impl WorldObject for Player {
     }
 
     fn render(&self) -> Vec<crate::instance_data::InstanceData> {
-        todo!()
+        vec![InstanceData {
+            position: Vec2::new(70.0, 0.0),
+            scale: 1.0,
+            color: [10.0, 0.0, 0.5, 1.0],
+        }]
     }
 
     fn get_name(&self) -> String {
