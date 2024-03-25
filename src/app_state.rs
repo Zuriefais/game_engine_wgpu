@@ -193,6 +193,13 @@ impl State {
 
         world.storage.push(player_obj);
 
+        let player_obj: Box<dyn WorldObject> = Box::new(Player {
+            name: "Main player".to_string(),
+            position: Vec2::new(20.0, 50.0),
+        });
+
+        world.storage.push(player_obj);
+
         let camera = Camera::create_camera_from_screen_size(
             size.width as f32,
             size.height as f32,
@@ -324,22 +331,18 @@ impl State {
             self.instance_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Instance Buffer"),
                 size: new_size as u64,
-                usage: wgpu::BufferUsages::VERTEX
-                    | wgpu::BufferUsages::COPY_DST
-                    | wgpu::BufferUsages::STORAGE, // Add STORAGE if needed
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST, // Add STORAGE if needed
                 mapped_at_creation: false,
-            })
+            });
+            self.instance_buffer_len = instances_num;
         }
 
-        let mut instances_to_render = vec![];
-
-        instances_to_render.append(&mut self.instances);
-        instances_to_render.append(&mut game_objects);
+        game_objects.append(&mut self.instances);
 
         self.queue.write_buffer(
             &self.instance_buffer,
             0,
-            bytemuck::cast_slice(&instances_to_render),
+            bytemuck::cast_slice(&game_objects),
         );
     }
 
