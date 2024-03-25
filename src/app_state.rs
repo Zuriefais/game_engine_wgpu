@@ -188,6 +188,7 @@ impl State {
 
         let player_obj: Box<dyn WorldObject> = Box::new(Player {
             name: "Main player".to_string(),
+            position: Vec2::new(-20.0, -30.0),
         });
 
         world.storage.push(player_obj);
