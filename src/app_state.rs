@@ -315,9 +315,8 @@ impl State {
     pub fn update_instance_buffer(&mut self) {
         let mut game_objects = vec![];
 
-        // Collect instance data from objects (consider referencing specific data)
         for obj in self.world.storage.iter() {
-            game_objects.append(&mut obj.render()); // Hypothetical method
+            game_objects.append(&mut obj.render());
         }
 
         let instance_data_size = std::mem::size_of::<InstanceData>();
