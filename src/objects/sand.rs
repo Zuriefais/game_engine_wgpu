@@ -169,7 +169,7 @@ impl CellWorld {
     fn render_chunk(world: &CellWorld, chunk_pos: IVec2) -> Vec<InstanceData> {
         let mut material_data = vec![];
         let chunk_pos_local =
-            (CellWorld::calculate_chunk_pos(chunk_pos) * CHUNK_SIZE * CELL_SIZE.xy().as_ivec2())
+            (CellWorld::calculate_chunk_pos(chunk_pos) * CHUNK_SIZE)
                 .as_vec2();
         let chunk = world.get_chunk(chunk_pos);
         if let Some(chunk) = chunk {
@@ -183,7 +183,7 @@ impl CellWorld {
                         };
 
                         material_data.push(InstanceData {
-                            position: (((cell_pos.as_vec2() + cell.1) * CELL_SIZE.xy())
+                            position: (cell_pos.as_vec2() + cell.1
                                 + chunk_pos_local),
                             scale: 1.0,
                             color: color,
@@ -203,6 +203,7 @@ impl CellWorld {
         let mut chunks = HashMap::new();
 
         chunks.insert(IVec2::ZERO, chunk);
+        chunks.insert(IVec2::new(-1, -1), chunk.clone());
 
         Self {
             position: Vec2::ZERO,
