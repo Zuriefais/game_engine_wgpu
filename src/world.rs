@@ -2,6 +2,7 @@ use crate::instance_data::InstanceData;
 use glam::Vec2;
 use log::info;
 use winit::event::WindowEvent;
+use crate::objects::Player;
 
 pub struct WorldObjectContainer {
     pub obj: Box<dyn WorldObject>,
@@ -23,6 +24,30 @@ impl World {
             object.input(delta_t, event);
         }
         true
+    }
+
+    pub fn add_obj(&mut self, obj: Box<dyn WorldObject>) {
+        self.storage.push(obj)
+    }
+
+    pub fn init_world() -> Self {
+        let mut world = World::default();
+
+        let player_obj: Box<dyn WorldObject> = Box::new(Player {
+            name: "Main player".to_string(),
+            position: Vec2::new(-20.0, -30.0),
+        });
+
+        world.add_obj(player_obj);
+
+        let player_obj: Box<dyn WorldObject> = Box::new(Player {
+            name: "Main player".to_string(),
+            position: Vec2::new(20.0, 50.0),
+        });
+
+        world.add_obj(player_obj);
+
+        world
     }
 }
 

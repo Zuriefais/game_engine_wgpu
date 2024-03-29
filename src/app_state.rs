@@ -184,21 +184,7 @@ impl State {
         let num_vertices = VERTICES.len() as u32;
         let num_indices = INDICES.len() as u32;
 
-        let mut world = World::default();
-
-        let player_obj: Box<dyn WorldObject> = Box::new(Player {
-            name: "Main player".to_string(),
-            position: Vec2::new(-20.0, -30.0),
-        });
-
-        world.storage.push(player_obj);
-
-        let player_obj: Box<dyn WorldObject> = Box::new(Player {
-            name: "Main player".to_string(),
-            position: Vec2::new(20.0, 50.0),
-        });
-
-        world.storage.push(player_obj);
+        let mut world = World::init_world();
 
         let camera = Camera::create_camera_from_screen_size(
             size.width as f32,
