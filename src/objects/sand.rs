@@ -1,4 +1,4 @@
-use crate::utils::u8_to_f32_safe;
+use crate::enums::cell_assets::import_assets;
 use glam::{IVec2, Vec2, Vec3, Vec3Swizzles};
 use hashbrown::HashMap;
 
@@ -24,6 +24,13 @@ impl Default for Chunk {
 }
 
 impl Chunk {
+    pub fn new_full(to_full: usize) -> Self {
+        Self {
+            cells: [Some((to_full, Vec2::ZERO)); CHUNK_SIZE_LEN],
+            cell_count: 0,
+        }
+    }
+
     pub fn get(&self, pos: IVec2) -> Option<(usize, Vec2)> {
         match Chunk::ivec_to_vec_index(pos) {
             Some(index) => self.cells[index],
@@ -170,13 +177,10 @@ impl CellWorld {
                 for x in 0..CHUNK_SIZE.x {
                     let cell_pos = IVec2 { x: x, y: y };
                     if let Some(cell) = chunk.get(cell_pos) {
-                        let color = u8_to_f32_safe(
-                            match world.cell_assets_handles.get_color(cell.0) {
-                                Some(color) => color,
-                                None => ecolor::hex_color!("#5D3FD3"),
-                            }
-                            .to_array(),
-                        );
+                        let color = match world.cell_assets_handles.get_color(cell.0) {
+                            Some(color) => color,
+                            None => ecolor::hex_color!("#5D3FD3").into(),
+                        };
 
                         material_data.push(InstanceData {
                             position: (((cell_pos.as_vec2() + cell.1) * CELL_SIZE.xy())
@@ -189,6 +193,23 @@ impl CellWorld {
             }
         }
         material_data
+    }
+
+    pub fn new() -> Self {
+        let cell_assets_handles = import_assets().unwrap();
+
+        let chunk = Chunk::new_full(0);
+
+        let mut chunks = HashMap::new();
+
+        chunks.insert(IVec2::ZERO, chunk);
+
+        Self {
+            position: Vec2::ZERO,
+            chunks,
+            chunk_count: 1,
+            cell_assets_handles,
+        }
     }
 }
 
@@ -213,6 +234,6 @@ impl WorldObject for CellWorld {
     }
 
     fn get_name(&self) -> String {
-        todo!()
+        "cell world".to_string()
     }
 }

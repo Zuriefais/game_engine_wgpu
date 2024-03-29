@@ -32,11 +32,3 @@
 //     // [0, 1] range to NDC
 //     [(screen_x * 2.0) - 1.0, (screen_y * 2.0) - 1.0]
 // }
-
-pub fn u8_to_f32_safe(bytes: [u8; 4]) -> [f32; 4] {
-    let mut floats = [0.0; 4];
-    for i in 0..4 {
-        floats[i] = f32::from_le_bytes([bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]]);
-    }
-    floats
-}

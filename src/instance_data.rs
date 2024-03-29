@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use ecolor::{Color32, Rgba};
 use glam::Vec2;
 
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -6,7 +7,7 @@ use glam::Vec2;
 pub struct InstanceData {
     pub position: Vec2,
     pub scale: f32,
-    pub color: [f32; 4],
+    pub color: Rgba,
 }
 
 impl InstanceData {
@@ -34,7 +35,7 @@ impl InstanceData {
                     format: wgpu::VertexFormat::Float32,
                 },
                 wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
+                    offset: mem::size_of::<Rgba>() as wgpu::BufferAddress,
                     shader_location: 7,
                     format: wgpu::VertexFormat::Float32x4,
                 },

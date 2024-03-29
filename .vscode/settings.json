@@ -6,6 +6,7 @@
         "ecolor",
         "OPENGL",
         "repr",
+        "Unorm",
         "Vulkan",
         "wgpu",
         "wgsl",

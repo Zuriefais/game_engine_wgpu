@@ -1,3 +1,4 @@
+use ecolor::{Color32, Rgba};
 use glam::{Vec2, Vec4, Vec4Swizzles};
 use log::info;
 use wgpu::util::DeviceExt;
@@ -217,7 +218,7 @@ impl State {
                     instances.push(InstanceData {
                         position: Vec2::new(x as f32, y as f32),
                         scale: 1.0,
-                        color: [0.0, 1.0 / (x as u32) as f32, 0.0, 1.0],
+                        color: Rgba::from_rgb(x as f32, y as f32, 0.0),
                     })
                 }
             }
@@ -231,12 +232,6 @@ impl State {
         });
 
         let instance_buffer_len = instances.len();
-
-        let cell_assets = import_assets().unwrap();
-
-        for asset in cell_assets.assets {
-            info!("{:?}", asset)
-        }
 
         return Self {
             surface,

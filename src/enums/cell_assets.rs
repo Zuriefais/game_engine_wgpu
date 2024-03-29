@@ -1,6 +1,6 @@
 use std::path;
 
-use ecolor::{Color32, HexColor};
+use ecolor::{Color32, HexColor, Rgba};
 use hashbrown::HashMap;
 use log::{info, warn};
 use ron::Deserializer;
@@ -13,7 +13,7 @@ use std::fs;
 #[derive(Clone, Deserialize, Debug)]
 pub struct CellAsset {
     pub physics_behavior: CellPhysicsType,
-    pub color: Color32,
+    pub color: Rgba,
     pub name: String,
     pub density: i32,
 }
@@ -22,7 +22,7 @@ pub struct CellAsset {
 pub struct CellAssets {
     pub assets: Vec<CellAsset>,
     pub assets_ids_map: HashMap<String, usize>,
-    pub assets_color_vec: Vec<Color32>,
+    pub assets_color_vec: Vec<Rgba>,
     pub assets_physics_behavior_vec: Vec<CellPhysicsType>,
 }
 
@@ -48,7 +48,7 @@ impl CellAssets {
         self.assets.get(i).cloned()
     }
 
-    pub fn get_color(&self, i: usize) -> Option<Color32> {
+    pub fn get_color(&self, i: usize) -> Option<Rgba> {
         Some(self.assets_color_vec[i].clone())
     }
 
@@ -56,7 +56,7 @@ impl CellAssets {
         Some(self.assets_physics_behavior_vec[i].clone())
     }
 
-    pub fn get_color_by_name(&self, name: String) -> Option<Color32> {
+    pub fn get_color_by_name(&self, name: String) -> Option<Rgba> {
         if let Some(handle_index) = self.assets_ids_map.get(&name) {
             return Some(self.assets_color_vec[*handle_index].clone());
         }

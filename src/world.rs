@@ -1,8 +1,8 @@
-use crate::instance_data::InstanceData;
+use crate::objects::Player;
+use crate::{instance_data::InstanceData, objects::sand::CellWorld};
 use glam::Vec2;
 use log::info;
 use winit::event::WindowEvent;
-use crate::objects::Player;
 
 pub struct WorldObjectContainer {
     pub obj: Box<dyn WorldObject>,
@@ -46,6 +46,10 @@ impl World {
         });
 
         world.add_obj(player_obj);
+
+        let sand = Box::new(CellWorld::new());
+
+        world.add_obj(sand);
 
         world
     }
