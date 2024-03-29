@@ -1,3 +1,5 @@
+pub mod sand;
+
 use glam::Vec2;
 use log::info;
 use winit::event::WindowEvent;

@@ -1,0 +1,6 @@
+CellAsset(
+    physics_behavior: Fluid,
+    color: "2f5eb8",
+    name: "Water",
+    density: 1000,
+)

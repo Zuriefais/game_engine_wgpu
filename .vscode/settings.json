@@ -2,6 +2,8 @@
     "cSpell.words": [
         "bytemuck",
         "cgmath",
+        "colorsys",
+        "ecolor",
         "OPENGL",
         "repr",
         "Vulkan",
@@ -13,6 +15,9 @@
     "editor.fontFamily": "JetBrains Mono",
     "editor.fontLigatures": true,
     "rust-analyzer.linkedProjects": [
+        "./Cargo.toml",
+        "./Cargo.toml",
+        "./Cargo.toml",
         "./Cargo.toml"
     ],
 }

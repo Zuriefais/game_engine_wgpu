@@ -1,0 +1,6 @@
+CellAsset(
+    physics_behavior: Sand,
+    color: "f6d7b0",
+    name: "Sand",
+    density: 1442,
+)

@@ -11,6 +11,14 @@ wgpu = {version = "0.18", features = ["glsl"]}
 pollster = "0.3.0"
 glam = {version = "0.27.0", features = ["bytemuck"]}
 bytemuck = {version = "1.14.3", features = ["derive"]}
+hashbrown = {version = "*", features = ["serde"]}
+serde = {version="*", features=["derive"]}
+serde_derive = "*"
+ron = "0.8.1"
+lazy_static = "1.4.0"
+color-hex = "*"
+ecolor = {features = ["serde", "bytemuck", "color-hex", "cint"], version="*"}
+toml = "0.8.12"
 
 [build]
 rustflags = ["-Z", "threads=8"]

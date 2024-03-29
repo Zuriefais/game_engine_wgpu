@@ -1,6 +1,7 @@
 pub mod app_state;
 pub mod camera;
 pub mod constants;
+pub mod enums;
 pub mod instance_data;
 pub mod objects;
 pub mod utils;

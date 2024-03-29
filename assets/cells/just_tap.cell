@@ -1,0 +1,6 @@
+CellAsset(
+    physics_behavior: Tap("Sand"),
+    color: "ffffff",
+    name: "Just tap",
+    density: 1060,
+)

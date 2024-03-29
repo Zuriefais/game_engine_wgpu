@@ -1,5 +1,4 @@
-use crate::utils::*;
-use glam::{Vec2, Vec3, Vec4, Vec4Swizzles};
+use glam::{Vec2, Vec4, Vec4Swizzles};
 use log::info;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -10,6 +9,7 @@ use winit::{
 use crate::{
     camera::Camera,
     constants::{INDICES, VERTICES},
+    enums::cell_assets::{self, import_assets, CellAssets},
     instance_data::InstanceData,
     objects::Player,
     world::{World, WorldObject},
@@ -246,6 +246,12 @@ impl State {
 
         let instance_buffer_len = instances.len();
 
+        let cell_assets = import_assets().unwrap();
+
+        for asset in cell_assets.assets {
+            info!("{:?}", asset)
+        }
+
         return Self {
             surface,
             device,
@@ -353,9 +359,9 @@ impl State {
                 info!("scrolled: {}", scrolled);
 
                 if scrolled > &0.0 {
-                    self.camera.zoom_factor -= 0.01;
+                    self.camera.zoom_factor -= 0.1;
                 } else {
-                    self.camera.zoom_factor += 0.01;
+                    self.camera.zoom_factor += 0.1;
                 }
                 self.camera.update_matrix();
                 self.update_camera_buffer();
