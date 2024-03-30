@@ -348,7 +348,7 @@ impl State {
                 _ => {}
             }
             if direction != Vec2::ZERO {
-                self.camera.position += direction.normalize() * 0.9;
+                self.camera.position += direction.normalize() * self.camera.zoom_factor;
                 self.camera.update_matrix();
 
                 info!("{}", self.camera.position);
