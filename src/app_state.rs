@@ -1,5 +1,5 @@
 use ecolor::{Color32, Rgba};
-use glam::{Vec2, Vec4, Vec4Swizzles};
+use glam::{Mat4, Vec2, Vec4, Vec4Swizzles};
 use log::info;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -8,7 +8,7 @@ use winit::{
 };
 
 use crate::{
-    camera::Camera,
+    camera::{self, Camera, CameraUniform},
     constants::{INDICES, VERTICES},
     enums::cell_assets::{self, import_assets, CellAssets},
     instance_data::InstanceData,
@@ -31,9 +31,6 @@ pub struct State {
     pub num_indices: u32,
     pub world: World,
     pub camera: Camera,
-    pub camera_buffer: wgpu::Buffer,
-    pub camera_bind_group: wgpu::BindGroup,
-    pub camera_bind_group_layout: wgpu::BindGroupLayout,
     pub instances: Vec<InstanceData>,
     pub instance_buffer: wgpu::Buffer,
     pub instance_buffer_len: usize,
@@ -187,18 +184,14 @@ impl State {
 
         let mut world = World::init_world();
 
-        let camera = Camera::create_camera_from_screen_size(
-            size.width as f32,
-            size.height as f32,
-            0.1,
-            100.0,
-            0.0,
-            Vec2::ZERO,
-        );
+        let camera_uniform = CameraUniform {
+            view_proj: Mat4::ZERO.to_cols_array_2d(),
+            position: Vec4::ZERO,
+        };
 
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera.uniform]),
+            contents: bytemuck::cast_slice(&[camera_uniform]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -210,6 +203,18 @@ impl State {
             }],
             label: Some("camera_bind_group"),
         });
+
+        let camera = Camera::create_camera_from_screen_size(
+            size.width as f32,
+            size.height as f32,
+            0.1,
+            100.0,
+            0.0,
+            Vec2::ZERO,
+            camera_buffer,
+            camera_bind_group,
+            camera_bind_group_layout,
+        );
 
         let instances = {
             let mut instances = vec![];
@@ -247,9 +252,6 @@ impl State {
             num_indices,
             world,
             camera,
-            camera_buffer,
-            camera_bind_group,
-            camera_bind_group_layout,
             instances,
             instance_buffer,
             instance_buffer_len,
@@ -266,37 +268,14 @@ impl State {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.camera = Camera::create_camera_from_screen_size(
+            self.camera.update_matrix_from_screen_size(
                 self.size.width as f32,
                 self.size.height as f32,
                 self.camera.near,
                 self.camera.far,
-                self.camera.zoom_factor,
-                self.camera.position,
             );
-            self.camera.update_matrix();
-            self.update_camera_buffer();
+            self.camera.update_camera_buffer(&self.queue);
         }
-    }
-
-    pub fn update_camera_buffer(&mut self) {
-        for instance in self.instances.iter() {
-            // info!(
-            //     "instance pos in game: {}, on screen: {}",
-            //     instance.position,
-            //     get_screen_pos(
-            //         self.camera.get_matrix(),
-            //         self.camera.position,
-            //         instance.position,
-            //         self.size
-            //     )
-            // )
-        }
-        self.queue.write_buffer(
-            &self.camera_buffer,
-            0,
-            bytemuck::cast_slice(&[self.camera.uniform]),
-        );
     }
 
     pub fn update_instance_buffer(&mut self) {
@@ -345,7 +324,7 @@ impl State {
                     self.camera.zoom_factor += 0.1;
                 }
                 self.camera.update_matrix();
-                self.update_camera_buffer();
+                self.camera.update_camera_buffer(&self.queue);
             }
         }
 
@@ -371,7 +350,7 @@ impl State {
                 self.camera.update_matrix();
 
                 info!("{}", self.camera.position);
-                self.update_camera_buffer();
+                self.camera.update_camera_buffer(&self.queue);
             }
         }
 
@@ -397,7 +376,7 @@ impl State {
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        self.update_camera_buffer();
+        self.camera.update_camera_buffer(&self.queue);
         self.update_instance_buffer();
         let output = self.surface.get_current_texture()?;
         let view = output
@@ -433,7 +412,7 @@ impl State {
 
             render_pass.set_pipeline(&self.render_pipeline);
             // NEW!
-            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.camera.camera_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));

@@ -10,6 +10,9 @@ pub struct Camera {
     pub far: f32,
     pub zoom_factor: f32,
     pub position: Vec2,
+    pub camera_buffer: wgpu::Buffer,
+    pub camera_bind_group: wgpu::BindGroup,
+    pub camera_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 #[repr(C)]
@@ -30,6 +33,9 @@ impl Camera {
         far: f32,
         mut zoom_factor: f32,
         position: Vec2,
+        camera_buffer: wgpu::Buffer,
+        camera_bind_group: wgpu::BindGroup,
+        camera_bind_group_layout: wgpu::BindGroupLayout,
     ) -> Self {
         if zoom_factor == 0.0 {
             zoom_factor = 1.0;
@@ -48,6 +54,9 @@ impl Camera {
             far,
             zoom_factor,
             position,
+            camera_buffer,
+            camera_bind_group,
+            camera_bind_group_layout,
         }
     }
 
@@ -81,13 +90,42 @@ impl Camera {
         far: f32,
         zoom_factor: f32,
         position: Vec2,
+        camera_buffer: wgpu::Buffer,
+        camera_bind_group: wgpu::BindGroup,
+        camera_bind_group_layout: wgpu::BindGroupLayout,
     ) -> Camera {
         let aspect = width / height;
         let left = -aspect / 2.0;
         let right = aspect / 2.0;
         let bottom = -0.5;
         let top = 0.5;
-        Camera::new(right, left, top, bottom, near, far, zoom_factor, position)
+        Camera::new(
+            right,
+            left,
+            top,
+            bottom,
+            near,
+            far,
+            zoom_factor,
+            position,
+            camera_buffer,
+            camera_bind_group,
+            camera_bind_group_layout,
+        )
+    }
+
+    pub fn update_matrix_from_screen_size(&mut self, width: f32, height: f32, near: f32, far: f32) {
+        let aspect = width / height;
+        let left = -aspect / 2.0;
+        let right = aspect / 2.0;
+        let bottom = -0.5;
+        let top = 0.5;
+
+        self.right = right;
+        self.left = left;
+        self.bottom = bottom;
+        self.top = top;
+        self.update_matrix();
     }
 
     pub fn update_matrix(&mut self) {
@@ -99,5 +137,13 @@ impl Camera {
 
     pub fn get_matrix(&self) -> Mat4 {
         self.create_matrix()
+    }
+
+    pub fn update_camera_buffer(&mut self, queue: &wgpu::Queue) {
+        queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.uniform]),
+        );
     }
 }

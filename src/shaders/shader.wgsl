@@ -33,9 +33,14 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
+struct ColorsBuffer {
+  values: array<vec4<f32>>,
+};
+
+@group(0) @binding(1) var<storage, read> myData: ColorsBuffer;
+
 struct InstanceInput {
     @location(5) position: vec2<f32>,
     @location(6) scale: f32,
     @location(7) color: vec4<f32>,
 };
- 
