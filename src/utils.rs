@@ -32,3 +32,14 @@
 //     // [0, 1] range to NDC
 //     [(screen_x * 2.0) - 1.0, (screen_y * 2.0) - 1.0]
 // }
+
+use ecolor::Rgba;
+
+pub fn normalize_color(color: Rgba) -> Rgba {
+    Rgba::from_rgba_premultiplied(
+        color.r() / 255.0,
+        color.g() / 255.0,
+        color.b() / 255.0,
+        color.a() / 255.0,
+    )
+}

@@ -1,6 +1,4 @@
-CellAsset(
-    physics_behavior: Tap("Blood"),
-    color: "#8B0000",
-    name: "Blood stone",
-    density: 1060,
-)
+physics_behavior = {Tap = "Blood"}
+color = [139, 0, 0, 1]
+name = "BloodStone"
+density = 1060

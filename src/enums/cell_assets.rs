@@ -109,10 +109,14 @@ pub fn import_asset(path: String) -> Option<CellAsset> {
         info!("loading asset file");
         info!("{}", asset_str);
 
-        let some_asset = toml::from_str(&asset_str);
+        let some_asset = toml::from_str::<CellAsset>(&asset_str);
 
         match some_asset {
-            Ok(asset) => return Some(asset),
+            Ok(mut asset) => {
+                asset.color = crate::utils::normalize_color(asset.color);
+                info!("asset loaded: {:?}", asset);
+                return Some(asset);
+            }
             Err(error) => {
                 warn!("{}", error.to_string())
             }
