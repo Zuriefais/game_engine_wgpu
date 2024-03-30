@@ -19,9 +19,9 @@ impl World {
         }
     }
 
-    pub fn input(&mut self, delta_t: f32, event: &WindowEvent) -> bool {
+    pub fn input(&mut self, delta_t: f32, event: &WindowEvent, mouse_position: Vec2) -> bool {
         for object in self.storage.iter_mut() {
-            object.input(delta_t, event);
+            object.input(delta_t, event, mouse_position);
         }
         true
     }
@@ -72,7 +72,7 @@ pub trait WorldObject {
         // );
     }
 
-    fn input(&mut self, delta_t: f32, event: &WindowEvent) {
+    fn input(&mut self, delta_t: f32, event: &WindowEvent, mouse_position: Vec2) {
         match event {
             WindowEvent::KeyboardInput { input, .. } => {
                 info!(

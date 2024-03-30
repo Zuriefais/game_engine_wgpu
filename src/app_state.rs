@@ -34,6 +34,7 @@ pub struct State {
     pub instances: Vec<InstanceData>,
     pub instance_buffer: wgpu::Buffer,
     pub instance_buffer_len: usize,
+    pub mouse_position: Vec2,
 }
 
 impl State {
@@ -255,6 +256,7 @@ impl State {
             instances,
             instance_buffer,
             instance_buffer_len,
+            mouse_position: Vec2::ZERO,
         };
     }
 
@@ -312,7 +314,7 @@ impl State {
     }
 
     pub fn input(&mut self, event: &WindowEvent, delta_t: f32) -> bool {
-        self.world.input(delta_t, event);
+        self.world.input(delta_t, event, self.mouse_position);
 
         if let WindowEvent::MouseWheel { delta, .. } = event {
             if let MouseScrollDelta::LineDelta(_, scrolled) = delta {
@@ -355,17 +357,28 @@ impl State {
         }
 
         if let WindowEvent::CursorMoved { position, .. } = event {
-            let position_in_game = {
-                self.camera.get_matrix().mul_vec4(Vec4::new(
-                    position.x as f32,
-                    position.y as f32,
-                    0.0,
-                    0.0,
-                ))
-            };
+            let position_in_game = self
+                .camera
+                .mouse_to_world(Vec2::new(position.x as f32, position.y as f32), self.size);
 
-            info!("mouse pos in game: {}", position_in_game.xy())
+            self.mouse_position = position_in_game;
+
+            info!("mouse pos in game: {}", position_in_game)
         }
+
+        if let WindowEvent::MouseInput {
+            device_id,
+            state,
+            button,
+            modifiers,
+        } = event
+        {
+            self.world.add_obj(Box::new(Player {
+                name: "test player".to_string(),
+                position: self.mouse_position,
+            }))
+        }
+
         false
     }
 

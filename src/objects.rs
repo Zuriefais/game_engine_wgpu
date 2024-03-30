@@ -40,7 +40,11 @@ impl WorldObject for Player {
         return self.name.clone();
     }
 
-    fn input(&mut self, delta_t: f32, event: &winit::event::WindowEvent) {
+    fn update(&mut self, delta_t: f32) {
+        info!("{}", self.get_pos().to_string())
+    }
+
+    fn input(&mut self, delta_t: f32, event: &winit::event::WindowEvent, mouse_position: Vec2) {
         match event {
             WindowEvent::CursorMoved { position, .. } => {
                 info!(

@@ -1,4 +1,5 @@
-use glam::{Mat4, Vec2, Vec4};
+use glam::{Mat4, Vec2, Vec4, Vec4Swizzles};
+use winit::dpi::PhysicalSize;
 
 pub struct Camera {
     pub uniform: CameraUniform,
@@ -145,5 +146,29 @@ impl Camera {
             0,
             bytemuck::cast_slice(&[self.uniform]),
         );
+    }
+
+    pub fn mouse_to_world(&self, mouse_pos: Vec2, viewport_size: PhysicalSize<u32>) -> Vec2 {
+        let viewport_width = viewport_size.width as f32; // Replace with actual viewport width
+        let viewport_height = viewport_size.height as f32; // Replace with actual viewport height
+
+        // Normalize mouse coordinates to [-1, 1] range
+        let normalized_x = 2.0 * mouse_pos.x / viewport_width - 1.0;
+        let normalized_y = -(2.0 * mouse_pos.y / viewport_height) + 1.0; // Invert Y for camera space
+
+        // Inverse viewport transform
+        let inv_viewport_width = 1.0 / (self.right - self.left);
+        let inv_viewport_height = 1.0 / (self.top - self.bottom);
+        let screen_pos = Vec2::new(
+            normalized_x * inv_viewport_width * viewport_width,
+            normalized_y * inv_viewport_height * viewport_height,
+        );
+
+        // Inverse projection transform (assuming orthographic projection)
+        let view_to_world = self.create_matrix().inverse(); // Use the camera's inverse matrix
+        let world_pos = view_to_world.mul_vec4(screen_pos.extend(0f32).extend(1.0));
+
+        // Return the world position as a Vec2
+        world_pos.xy() / self.zoom_factor / 100f32
     }
 }
