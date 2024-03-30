@@ -6,6 +6,7 @@
         "ecolor",
         "OPENGL",
         "repr",
+        "turborand",
         "unmultiplied",
         "Unorm",
         "Vulkan",

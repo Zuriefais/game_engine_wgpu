@@ -19,6 +19,7 @@ lazy_static = "1.4.0"
 color-hex = "*"
 ecolor = {features = ["serde", "bytemuck", "color-hex", "cint"], version="*"}
 toml = "0.8.12"
+turborand = "0.10.1"
 
 [build]
 rustflags = ["-Z", "threads=8"]

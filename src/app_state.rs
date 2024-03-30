@@ -321,9 +321,9 @@ impl State {
                 info!("scrolled: {}", scrolled);
 
                 if scrolled > &0.0 {
-                    self.camera.zoom_factor -= 0.1;
+                    self.camera.zoom_factor -= 0.3;
                 } else {
-                    self.camera.zoom_factor += 0.1;
+                    self.camera.zoom_factor += 0.3;
                 }
                 self.camera.update_matrix();
                 self.camera.update_camera_buffer(&self.queue);

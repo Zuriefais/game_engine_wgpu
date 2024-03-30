@@ -564,6 +564,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "toml",
+ "turborand",
  "wgpu",
  "winit",
 ]
@@ -1573,6 +1574,16 @@ name = "ttf-parser"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17f77d76d837a7830fe1d4f12b7b4ba4192c1888001c7164257e4bc6d21d96b4"
+
+[[package]]
+name = "turborand"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffa9ae3c65785079fa553e8aea4ae4b12579b5c5029b4133b54ea3afb2e3e9fa"
+dependencies = [
+ "getrandom",
+ "instant",
+]
 
 [[package]]
 name = "unicode-ident"
