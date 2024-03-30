@@ -1,6 +1,4 @@
-CellAsset(
-    physics_behavior: Tap("Sand"),
-    color: "ffffff",
-    name: "Just tap",
-    density: 1060,
-)
+physics_behavior = {Tap = "Sand"}
+color = [255, 255, 255, 255]
+name = "Just tap"
+density = 1060

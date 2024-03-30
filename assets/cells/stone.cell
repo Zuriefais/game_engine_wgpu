@@ -1,6 +1,4 @@
-CellAsset(
-    physics_behavior: Solid,
-    color: "4E5754",
-    name: "Stone",
-    density: 1060,
-)
+physics_behavior = 'Solid'
+color = [78, 87, 84, 255]
+name = "Stone"
+density = 1060
