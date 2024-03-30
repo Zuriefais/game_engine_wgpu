@@ -29,7 +29,7 @@ impl WorldObject for Player {
                 instances.push(InstanceData {
                     position: Vec2::new(x as f32, y as f32) + self.position,
                     scale: 1.0,
-                    color: Rgba::from_rgb(x as f32, y as f32, 0.0),
+                    color: Rgba::from_rgb(x as f32 / 255.0, y as f32 / 255.0, 0.0),
                 })
             }
         }

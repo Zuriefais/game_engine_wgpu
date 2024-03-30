@@ -1,2 +1,2 @@
 echo runnning engine
-cargo fmt && mangohud cargo run --release
+cargo fmt && cargo run --release

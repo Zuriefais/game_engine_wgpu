@@ -1,4 +1,5 @@
 use crate::enums::cell_assets::import_assets;
+use ecolor::Rgba;
 use glam::{IVec2, Vec2, Vec3, Vec3Swizzles};
 use hashbrown::HashMap;
 
@@ -168,9 +169,7 @@ impl CellWorld {
 
     fn render_chunk(world: &CellWorld, chunk_pos: IVec2) -> Vec<InstanceData> {
         let mut material_data = vec![];
-        let chunk_pos_local =
-            (CellWorld::calculate_chunk_pos(chunk_pos) * CHUNK_SIZE)
-                .as_vec2();
+        let chunk_pos_local = (CellWorld::calculate_chunk_pos(chunk_pos) * CHUNK_SIZE).as_vec2();
         let chunk = world.get_chunk(chunk_pos);
         if let Some(chunk) = chunk {
             for y in 0..CHUNK_SIZE.y {
@@ -179,12 +178,11 @@ impl CellWorld {
                     if let Some(cell) = chunk.get(cell_pos) {
                         let color = match world.cell_assets_handles.get_color(cell.0) {
                             Some(color) => color,
-                            None => ecolor::hex_color!("#5D3FD3").into(),
+                            None => Rgba::from_rgb(1.0, 0.0, 0.0),
                         };
 
                         material_data.push(InstanceData {
-                            position: (cell_pos.as_vec2() + cell.1
-                                + chunk_pos_local),
+                            position: (cell_pos.as_vec2() + cell.1 + chunk_pos_local),
                             scale: 1.0,
                             color: color,
                         })
