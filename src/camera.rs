@@ -169,6 +169,6 @@ impl Camera {
         let world_pos = view_to_world.mul_vec4(screen_pos.extend(0f32).extend(1.0));
 
         // Return the world position as a Vec2
-        world_pos.xy() / self.zoom_factor / 100f32
+        world_pos.xy() / 1000f32
     }
 }

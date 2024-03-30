@@ -210,10 +210,15 @@ impl CellWorld {
 
         let chunk = Chunk::new_full(0);
 
+        let mut tap_chunk = Chunk::default();
+
+        tap_chunk.cells[CHUNK_SIZE_LEN - 6] = Some((2, Vec2::ZERO));
+
         let mut chunks = HashMap::new();
 
         chunks.insert(IVec2::ZERO, chunk);
         chunks.insert(IVec2::new(-1, -1), chunk.clone());
+        chunks.insert(IVec2::new(-1, 0), tap_chunk);
 
         Self {
             position: Vec2::ZERO,
