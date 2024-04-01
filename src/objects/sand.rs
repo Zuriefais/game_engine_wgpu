@@ -5,7 +5,7 @@ use ecolor::Rgba;
 use glam::{IVec2, Vec2, Vec3, Vec3Swizzles};
 use hashbrown::HashMap;
 use turborand::{rng::Rng, *};
-use winit::event::VirtualKeyCode;
+use winit::event::{MouseButton, VirtualKeyCode};
 
 use crate::{
     enums::{cell_assets::CellAssets, CELL_SIZE, CHUNK_SIZE, CHUNK_SIZE_LEN},
@@ -212,13 +212,20 @@ impl CellWorld {
 
         let mut tap_chunk = Chunk::default();
 
-        tap_chunk.cells[CHUNK_SIZE_LEN - 6] = Some((2, Vec2::ZERO));
+        for i in 1..100 {
+            tap_chunk.cells[CHUNK_SIZE_LEN - i] = Some((4, Vec2::ZERO));
+        }
 
         let mut chunks = HashMap::new();
 
         chunks.insert(IVec2::ZERO, chunk);
         chunks.insert(IVec2::new(-1, -1), chunk.clone());
-        chunks.insert(IVec2::new(-1, 0), tap_chunk);
+
+        for x in -5..5 {
+            for y in -5..5 {
+                chunks.insert(IVec2::new(x, y), tap_chunk);
+            }
+        }
 
         Self {
             position: Vec2::ZERO,
@@ -340,12 +347,13 @@ impl WorldObject for CellWorld {
             } => match input.virtual_keycode {
                 Some(code) => match code {
                     VirtualKeyCode::Q => {
-                        self.is_move = true;
+                        self.is_move = !self.is_move;
                     }
                     _ => {}
                 },
                 None => {}
             },
+
             _ => {}
         }
     }
