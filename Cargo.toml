@@ -20,6 +20,7 @@ color-hex = "*"
 ecolor = {features = ["serde", "bytemuck", "color-hex", "cint"], version="*"}
 toml = "0.8.12"
 turborand = "0.10.1"
+egui-wgpu = "=0.25"
 
 [build]
 rustflags = ["-Z", "threads=8"]

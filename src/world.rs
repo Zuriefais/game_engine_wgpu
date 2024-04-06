@@ -1,3 +1,4 @@
+use crate::enums::cell_assets::CellAssets;
 use crate::objects::Player;
 use crate::{instance_data::InstanceData, objects::sand::CellWorld};
 use glam::Vec2;
@@ -10,6 +11,7 @@ pub struct WorldObjectContainer {
 
 pub struct World {
     pub storage: Vec<Box<dyn WorldObject>>,
+    pub assets: CellAssets,
 }
 
 impl World {
@@ -30,8 +32,11 @@ impl World {
         self.storage.push(obj)
     }
 
-    pub fn init_world() -> Self {
-        let mut world = World::default();
+    pub fn init_world(assets: CellAssets) -> Self {
+        let mut world = World {
+            storage: Default::default(),
+            assets: assets.clone(),
+        };
 
         let player_obj: Box<dyn WorldObject> = Box::new(Player {
             name: "Main player".to_string(),
@@ -47,7 +52,7 @@ impl World {
 
         world.add_obj(player_obj);
 
-        let sand = Box::new(CellWorld::new());
+        let sand = Box::new(CellWorld::new(assets.clone()));
 
         world.add_obj(sand);
 
@@ -59,6 +64,7 @@ impl Default for World {
     fn default() -> Self {
         Self {
             storage: Default::default(),
+            assets: CellAssets::default(),
         }
     }
 }

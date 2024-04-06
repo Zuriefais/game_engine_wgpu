@@ -6,7 +6,7 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) color: vec4<f32>,
+    @location(0) color_index: u32,
 };
 
 @vertex
@@ -15,14 +15,14 @@ fn vs_main(
     instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.color = instance.color;
+    out.color_index = instance.color;
     out.clip_position = (vec4<f32>(model.position+vec3f(instance.position, 0.0), 1.0) - camera.position) * camera.view_proj;
     return out;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return in.color;
+    return pallete.values[in.color_index];
 }
 
 struct CameraUniform {
@@ -33,14 +33,14 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
-struct ColorsBuffer {
-  values: array<vec4<f32>>,
+struct Pallete {
+  values: array<vec4<f32>, 16>,
 };
 
-@group(0) @binding(1) var<storage, read> myData: ColorsBuffer;
+@group(0) @binding(1) var<uniform> pallete: Pallete;
 
 struct InstanceInput {
     @location(5) position: vec2<f32>,
     @location(6) scale: f32,
-    @location(7) color: vec4<f32>,
+    @location(7) color: u32,
 };

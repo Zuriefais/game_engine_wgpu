@@ -21,7 +21,6 @@ pub struct Camera {
 pub struct CameraUniform {
     pub view_proj: [[f32; 4]; 4],
     pub position: Vec4,
-    //pub position: [f32; 2],
 }
 
 impl Camera {

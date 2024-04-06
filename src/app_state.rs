@@ -1,7 +1,8 @@
 use ecolor::{Color32, Rgba};
+use egui_wgpu::RenderState;
 use glam::{Mat4, Vec2, Vec4, Vec4Swizzles};
 use log::info;
-use wgpu::util::DeviceExt;
+use wgpu::{util::DeviceExt, Buffer};
 use winit::{
     event::{MouseScrollDelta, VirtualKeyCode, WindowEvent},
     window::Window,
@@ -11,7 +12,7 @@ use crate::{
     camera::{self, Camera, CameraUniform},
     constants::{INDICES, VERTICES},
     enums::cell_assets::{self, import_assets, CellAssets},
-    instance_data::InstanceData,
+    instance_data::{InstanceData, Palette},
     objects::Player,
     world::{World, WorldObject},
     Vertex,
@@ -25,16 +26,17 @@ pub struct State {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub window: Window,
     pub render_pipeline: wgpu::RenderPipeline,
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
+    pub vertex_buffer: Buffer,
+    pub index_buffer: Buffer,
     pub num_vertices: u32,
     pub num_indices: u32,
     pub world: World,
     pub camera: Camera,
     pub instances: Vec<InstanceData>,
-    pub instance_buffer: wgpu::Buffer,
+    pub instance_buffer: Buffer,
     pub instance_buffer_len: usize,
     pub mouse_position: Vec2,
+    pub colors_buffer: Buffer,
 }
 
 impl State {
@@ -108,16 +110,28 @@ impl State {
 
         let camera_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                }],
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
                 label: Some("camera_bind_group_layout"),
             });
 
@@ -183,7 +197,24 @@ impl State {
         let num_vertices = VERTICES.len() as u32;
         let num_indices = INDICES.len() as u32;
 
-        let mut world = World::init_world();
+        let assets = import_assets().unwrap();
+
+        let mut palette = Palette {
+            values: [Rgba::RED; 16],
+        };
+        for i in (0..16) {
+            if let Some(color) = assets.assets_color_vec.get(i) {
+                palette.values[i] = color.clone();
+            }
+        }
+
+        let mut world = World::init_world(assets);
+
+        let colors_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Colors Buffer"),
+            contents: bytemuck::cast_slice(&[palette]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
         let camera_uniform = CameraUniform {
             view_proj: Mat4::ZERO.to_cols_array_2d(),
@@ -198,11 +229,17 @@ impl State {
 
         let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &camera_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: camera_buffer.as_entire_binding(),
-            }],
-            label: Some("camera_bind_group"),
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: camera_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: colors_buffer.as_entire_binding(),
+                },
+            ],
+            label: Some("camera_colors_bind_group"),
         });
 
         let camera = Camera::create_camera_from_screen_size(
@@ -224,7 +261,7 @@ impl State {
                     instances.push(InstanceData {
                         position: Vec2::new(x as f32, y as f32),
                         scale: 1.0,
-                        color: Rgba::from_rgb(x as f32, y as f32, 0.0),
+                        color: 0,
                     })
                 }
             }
@@ -257,6 +294,7 @@ impl State {
             instance_buffer,
             instance_buffer_len,
             mouse_position: Vec2::ZERO,
+            colors_buffer,
         };
     }
 
@@ -312,6 +350,8 @@ impl State {
             bytemuck::cast_slice(&game_objects),
         );
     }
+
+    pub fn update_colors_buffer(&mut self) {}
 
     pub fn input(&mut self, event: &WindowEvent, delta_t: f32) -> bool {
         self.world.input(delta_t, event, self.mouse_position);
@@ -424,7 +464,6 @@ impl State {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            // NEW!
             render_pass.set_bind_group(0, &self.camera.camera_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
@@ -433,7 +472,6 @@ impl State {
             render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instance_buffer_len as _);
         }
 
-        // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 

@@ -188,15 +188,10 @@ impl CellWorld {
                 for x in 0..CHUNK_SIZE.x {
                     let cell_pos = IVec2 { x: x, y: y };
                     if let Some(cell) = chunk.get(cell_pos) {
-                        let color = match world.cell_assets_handles.get_color(cell.0) {
-                            Some(color) => color,
-                            None => Rgba::from_rgb(1.0, 0.0, 0.0),
-                        };
-
                         material_data.push(InstanceData {
                             position: (cell_pos.as_vec2() + cell.1 + chunk_pos_local),
                             scale: 1.0,
-                            color: color,
+                            color: cell.0 as u32,
                         })
                     }
                 }
@@ -205,9 +200,7 @@ impl CellWorld {
         material_data
     }
 
-    pub fn new() -> Self {
-        let cell_assets_handles = import_assets().unwrap();
-
+    pub fn new(assets: CellAssets) -> Self {
         let chunk = Chunk::new_full(0);
 
         let mut tap_chunk = Chunk::default();
@@ -221,8 +214,8 @@ impl CellWorld {
         chunks.insert(IVec2::ZERO, chunk);
         chunks.insert(IVec2::new(-1, -1), chunk.clone());
 
-        for x in -5..5 {
-            for y in -5..5 {
+        for x in -20..20 {
+            for y in -20..20 {
                 chunks.insert(IVec2::new(x, y), tap_chunk);
             }
         }
@@ -231,7 +224,7 @@ impl CellWorld {
             position: Vec2::ZERO,
             chunks,
             chunk_count: 1,
-            cell_assets_handles,
+            cell_assets_handles: assets,
             rand: Rng::new(),
             is_move: false,
         }

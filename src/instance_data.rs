@@ -7,7 +7,7 @@ use glam::Vec2;
 pub struct InstanceData {
     pub position: Vec2,
     pub scale: f32,
-    pub color: Rgba,
+    pub color: u32,
 }
 
 impl InstanceData {
@@ -35,11 +35,17 @@ impl InstanceData {
                     format: wgpu::VertexFormat::Float32,
                 },
                 wgpu::VertexAttribute {
-                    offset: mem::size_of::<Rgba>() as wgpu::BufferAddress,
+                    offset: mem::size_of::<usize>() as wgpu::BufferAddress,
                     shader_location: 7,
-                    format: wgpu::VertexFormat::Float32x4,
+                    format: wgpu::VertexFormat::Uint32,
                 },
             ],
         }
     }
+}
+
+#[derive(Clone, Copy, Pod, Zeroable)]
+#[repr(C)]
+pub struct Palette {
+    pub values: [Rgba; 16],
 }

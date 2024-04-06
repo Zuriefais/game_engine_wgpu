@@ -29,7 +29,7 @@ impl WorldObject for Player {
                 instances.push(InstanceData {
                     position: Vec2::new(x as f32, y as f32) + self.position,
                     scale: 1.0,
-                    color: Rgba::from_rgb(x as f32 / 255.0, y as f32 / 255.0, 0.0),
+                    color: 0,
                 })
             }
         }
@@ -41,17 +41,17 @@ impl WorldObject for Player {
     }
 
     fn update(&mut self, delta_t: f32) {
-        info!("{}", self.get_pos().to_string())
+        // info!("{}", self.get_pos().to_string())
     }
 
     fn input(&mut self, delta_t: f32, event: &winit::event::WindowEvent, mouse_position: Vec2) {
         match event {
             WindowEvent::CursorMoved { position, .. } => {
-                info!(
-                    "input for object: {}, mouse pos: {:?}",
-                    self.get_name(),
-                    position
-                );
+                // info!(
+                //     "input for object: {}, mouse pos: {:?}",
+                //     self.get_name(),
+                //     position
+                // );
             }
             WindowEvent::KeyboardInput { input, .. } => {
                 let mut direction = Vec2::ZERO;
