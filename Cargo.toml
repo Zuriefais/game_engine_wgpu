@@ -11,7 +11,7 @@ wgpu = {version = "0.18", features = ["glsl"]}
 pollster = "0.3.0"
 glam = {version = "0.27.0", features = ["bytemuck"]}
 bytemuck = {version = "1.14.3", features = ["derive"]}
-hashbrown = {version = "*", features = ["serde"]}
+hashbrown = {version = "0.14.3", features = ["serde", "rayon"]}
 serde = {version="*", features=["derive"]}
 serde_derive = "*"
 ron = "0.8.1"
@@ -21,6 +21,7 @@ ecolor = {features = ["serde", "bytemuck", "color-hex", "cint"], version="*"}
 toml = "0.8.12"
 turborand = "0.10.1"
 egui-wgpu = "=0.25"
+rayon = "1.10.0"
 
 [build]
 rustflags = ["-Z", "threads=8"]

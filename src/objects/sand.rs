@@ -4,8 +4,9 @@ use crate::enums::CellPhysicsType::Tap;
 use ecolor::Rgba;
 use glam::{IVec2, Vec2, Vec3, Vec3Swizzles};
 use hashbrown::HashMap;
+use rayon::{prelude::*, vec};
 use turborand::{rng::Rng, *};
-use winit::event::{MouseButton, VirtualKeyCode};
+use winit::event::{ElementState, MouseButton, VirtualKeyCode};
 
 use crate::{
     enums::{cell_assets::CellAssets, CELL_SIZE, CHUNK_SIZE, CHUNK_SIZE_LEN},
@@ -110,6 +111,25 @@ impl Chunk {
     pub fn check_bounds(pos: IVec2) -> bool {
         Chunk::ivec_to_vec_index(pos).is_some()
     }
+
+    fn render(&self, chunk_pos: IVec2) -> Vec<InstanceData> {
+        let mut material_data = vec![];
+        let chunk_pos_local = (CellWorld::calculate_chunk_pos(chunk_pos) * CHUNK_SIZE).as_vec2();
+
+        for y in 0..CHUNK_SIZE.y {
+            for x in 0..CHUNK_SIZE.x {
+                let cell_pos = IVec2 { x, y };
+                if let Some(cell) = self.get(cell_pos) {
+                    material_data.push(InstanceData {
+                        position: (cell_pos.as_vec2() + cell.1 + chunk_pos_local),
+                        scale: 1.0,
+                        color: cell.0 as u32,
+                    })
+                }
+            }
+        }
+        material_data
+    }
 }
 
 #[derive(Default)]
@@ -177,27 +197,6 @@ impl CellWorld {
             pos.y / CHUNK_SIZE.y
         };
         IVec2::new(div_x, div_y)
-    }
-
-    fn render_chunk(world: &CellWorld, chunk_pos: IVec2) -> Vec<InstanceData> {
-        let mut material_data = vec![];
-        let chunk_pos_local = (CellWorld::calculate_chunk_pos(chunk_pos) * CHUNK_SIZE).as_vec2();
-        let chunk = world.get_chunk(chunk_pos);
-        if let Some(chunk) = chunk {
-            for y in 0..CHUNK_SIZE.y {
-                for x in 0..CHUNK_SIZE.x {
-                    let cell_pos = IVec2 { x: x, y: y };
-                    if let Some(cell) = chunk.get(cell_pos) {
-                        material_data.push(InstanceData {
-                            position: (cell_pos.as_vec2() + cell.1 + chunk_pos_local),
-                            scale: 1.0,
-                            color: cell.0 as u32,
-                        })
-                    }
-                }
-            }
-        }
-        material_data
     }
 
     pub fn new(assets: CellAssets) -> Self {
@@ -321,14 +320,19 @@ impl WorldObject for CellWorld {
     }
 
     fn render(&self) -> Vec<InstanceData> {
-        let mut instance_data_vec = vec![];
-        for (pos, _) in self.chunks.iter() {
-            instance_data_vec.append(&mut Self::render_chunk(&self, pos.clone() * CHUNK_SIZE));
+        let pos_and_chunks = self.chunks.iter().enumerate();
+
+        let instance_data_vec = pos_and_chunks
+            .into_iter()
+            .map(|(pos, chunk)| (pos, chunk.clone())) // Clone to avoid borrowing issues
+            .par_bridge() // Use par_bridge to enable parallel processing
+            .map(|(index, chunk)| chunk.1.render(*chunk.0 * CHUNK_SIZE))
+            .collect::<Vec<_>>();
+        let mut data = vec![];
+        for mut arr in instance_data_vec {
+            data.append(&mut arr)
         }
-
-        return instance_data_vec;
-
-        // info!("{}", cells_material_data.0.len());
+        return data;
     }
 
     fn input(&mut self, delta_t: f32, event: &winit::event::WindowEvent, mouse_position: Vec2) {
@@ -337,14 +341,14 @@ impl WorldObject for CellWorld {
                 device_id,
                 input,
                 is_synthetic,
-            } => match input.virtual_keycode {
-                Some(code) => match code {
-                    VirtualKeyCode::Q => {
+            } => match (input.virtual_keycode, input.state) {
+                (Some(code), state) => match (code, state) {
+                    (VirtualKeyCode::Q, ElementState::Released) => {
                         self.is_move = !self.is_move;
                     }
                     _ => {}
                 },
-                None => {}
+                _ => {}
             },
 
             _ => {}
