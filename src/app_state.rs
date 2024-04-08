@@ -2,6 +2,9 @@ use ecolor::{Color32, Rgba};
 use egui_wgpu::RenderState;
 use glam::{Mat4, Vec2, Vec4, Vec4Swizzles};
 use log::info;
+#[feature(duration_millis_float)]
+use std::time::Duration;
+use std::time::Instant;
 use wgpu::{util::DeviceExt, Buffer};
 use winit::{
     event::{MouseScrollDelta, VirtualKeyCode, WindowEvent},
@@ -322,8 +325,17 @@ impl State {
         let mut game_objects = vec![];
 
         for obj in self.world.storage.iter() {
+            let now = Instant::now();
             game_objects.append(&mut obj.render());
+            let elapsed_time = now.elapsed();
+            info!(
+                "Running render() took {} seconds for {}.",
+                elapsed_time.as_secs_f32(),
+                obj.get_name(),
+            );
         }
+
+        let now = Instant::now();
 
         let instance_data_size = std::mem::size_of::<InstanceData>();
 
@@ -348,6 +360,11 @@ impl State {
             &self.instance_buffer,
             0,
             bytemuck::cast_slice(&game_objects),
+        );
+        let elapsed_time = now.elapsed();
+        info!(
+            "Running update_instance_buffer() took {}.",
+            elapsed_time.as_secs_f32(),
         );
     }
 
