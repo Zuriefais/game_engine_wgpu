@@ -250,8 +250,8 @@ impl CellWorld {
                 )
             }
 
-            for to_swap in to_swap_list {
-                chunk.cells.swap(to_swap.0, to_swap.1);
+            for (i, j) in to_swap_list {
+                chunk.cells.swap(i, j);
             }
             for to_move in to_move_list {
                 if let Some(cell) = chunk.cells.get_mut(to_move.1) {
