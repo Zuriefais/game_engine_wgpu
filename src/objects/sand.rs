@@ -255,10 +255,8 @@ impl CellWorld {
             }
             for to_move in to_move_list {
                 if let Some(cell) = chunk.cells.get_mut(to_move.1) {
-                    // Use get_mut for safe mutation
                     if let Some(cell) = cell {
-                        // Use get_mut for safe mutation
-                        cell.1 = cell.1 + to_move.0; // Explicit assignment
+                        cell.1 = cell.1 + to_move.0;
                     }
                 }
             }
