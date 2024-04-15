@@ -234,59 +234,20 @@ impl CellWorld {
             return;
         }
         for (chunk_pos, chunk) in self.chunks.iter_mut() {
-            // let mut chunk_below_option = world.get_mut_chunk(chunk_pos.clone() + IVec2{x:0, y:1});
-            // let mut chunk_below = match chunk_below_option {
-            //     Some(chunk_below) => chunk_below,
-            //     None => {
-            //         *chunk_below_option = Chunk::default()
-            //     },
-            // }
-            let mut to_swap_list = vec![];
+            let mut to_swap_list: Vec<_> = vec![];
             let mut to_move_list = vec![];
             let mut to_insert_list = vec![];
 
             for i in 0..chunk.cells.len() - 1 {
-                match chunk.cells[i] {
-                    Some(cell) => match self
-                        .cell_assets_handles
-                        .assets_physics_behavior_vec
-                        .get(cell.0)
-                    {
-                        Some(behavior) => match behavior {
-                            CellPhysicsType::Sand => {
-                                sand_physics(
-                                    i,
-                                    &chunk,
-                                    &mut to_swap_list,
-                                    &mut to_move_list,
-                                    &mut self.rand,
-                                );
-                            }
-                            CellPhysicsType::Fluid => {
-                                fluid_physics(
-                                    i,
-                                    &chunk,
-                                    &mut to_swap_list,
-                                    &mut to_move_list,
-                                    &mut self.rand,
-                                );
-                            }
-                            CellPhysicsType::Tap(to_spawn) => {
-                                tap_physics(
-                                    &mut to_insert_list,
-                                    i,
-                                    chunk,
-                                    &to_spawn,
-                                    &self.cell_assets_handles,
-                                    &mut self.rand,
-                                );
-                            }
-                            CellPhysicsType::Solid => {}
-                        },
-                        None => {}
-                    },
-                    None => {}
-                }
+                cell_physics(
+                    &mut to_swap_list,
+                    &mut to_insert_list,
+                    &mut to_move_list,
+                    i,
+                    chunk,
+                    &self.cell_assets_handles,
+                    &mut self.rand,
+                )
             }
 
             for to_swap in to_swap_list {
@@ -307,6 +268,35 @@ impl CellWorld {
                 }
             }
         }
+    }
+}
+
+fn cell_physics(
+    mut to_swap_list: &mut Vec<(usize, usize)>,
+    mut to_insert_list: &mut Vec<(usize, (usize, Vec2))>,
+    mut to_move_list: &mut Vec<(Vec2, usize)>,
+    i: usize,
+    chunk: &Chunk,
+    assets: &CellAssets,
+    mut rand: &mut Rng,
+) {
+    match chunk.cells[i] {
+        Some(cell) => match assets.get(cell.0) {
+            Some(behavior) => match behavior.physics_behavior {
+                CellPhysicsType::Sand => {
+                    sand_physics(i, &chunk, &mut to_swap_list, &mut to_move_list, &mut rand);
+                }
+                CellPhysicsType::Fluid => {
+                    fluid_physics(i, &chunk, &mut to_swap_list, &mut to_move_list, &mut rand);
+                }
+                CellPhysicsType::Tap(to_spawn) => {
+                    tap_physics(&mut to_insert_list, i, chunk, &to_spawn, assets, &mut rand);
+                }
+                CellPhysicsType::Solid => {}
+            },
+            None => {}
+        },
+        None => {}
     }
 }
 

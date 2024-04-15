@@ -363,8 +363,9 @@ impl State {
         );
         let elapsed_time = now.elapsed();
         info!(
-            "Running update_instance_buffer() took {}.",
+            "Running update_instance_buffer() took {}, cells rendered {}.",
             elapsed_time.as_secs_f32(),
+            game_objects.len()
         );
     }
 
