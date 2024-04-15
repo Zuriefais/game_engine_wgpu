@@ -137,7 +137,7 @@ pub struct CellWorld {
     pub position: Vec2,
     pub chunks: HashMap<IVec2, Chunk>,
     pub chunk_count: i32,
-    pub cell_assets_handles: CellAssets,
+    pub assets: CellAssets,
     pub rand: Rng,
     pub is_move: bool,
 }
@@ -223,7 +223,7 @@ impl CellWorld {
             position: Vec2::ZERO,
             chunks,
             chunk_count: 1,
-            cell_assets_handles: assets,
+            assets,
             rand: Rng::new(),
             is_move: false,
         }
@@ -245,7 +245,7 @@ impl CellWorld {
                     &mut to_move_list,
                     i,
                     chunk,
-                    &self.cell_assets_handles,
+                    &self.assets,
                     &mut self.rand,
                 )
             }
