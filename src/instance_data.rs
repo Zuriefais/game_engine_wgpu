@@ -6,7 +6,6 @@ use glam::Vec2;
 #[repr(C)]
 pub struct InstanceData {
     pub position: Vec2,
-    pub scale: f32,
     pub color: u32,
 }
 

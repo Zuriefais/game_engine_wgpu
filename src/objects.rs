@@ -28,7 +28,6 @@ impl WorldObject for Player {
             for y in 15..20 {
                 instances.push(InstanceData {
                     position: Vec2::new(x as f32, y as f32) + self.position,
-                    scale: 1.0,
                     color: 0,
                 })
             }

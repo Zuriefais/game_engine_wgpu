@@ -1,10 +1,11 @@
+use core::panic;
 use ecolor::{Color32, Rgba};
 use egui_wgpu::RenderState;
 use glam::{Mat4, Vec2, Vec4, Vec4Swizzles};
 use log::info;
 #[feature(duration_millis_float)]
 use std::time::Duration;
-use std::time::Instant;
+use std::{fs, time::Instant};
 use wgpu::{util::DeviceExt, Buffer};
 use winit::{
     event::{MouseScrollDelta, VirtualKeyCode, WindowEvent},
@@ -106,9 +107,17 @@ impl State {
             view_formats: vec![],
         };
         surface.configure(&device, &config);
+        let shader_file = {
+            match fs::read_to_string("assets/shaders/shader.wgsl".to_string()) {
+                Ok(str) => str,
+                Err(_) => {
+                    panic!("could't load shader at path: assets/shaders/shader.wgsl ")
+                }
+            }
+        };
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(shader_file.into()),
         });
 
         let camera_bind_group_layout =
@@ -263,7 +272,6 @@ impl State {
                 for y in -10..10 {
                     instances.push(InstanceData {
                         position: Vec2::new(x as f32, y as f32),
-                        scale: 1.0,
                         color: 0,
                     })
                 }
@@ -379,9 +387,9 @@ impl State {
                 info!("scrolled: {}", scrolled);
 
                 if scrolled > &0.0 {
-                    self.camera.zoom_factor -= 0.3;
+                    self.camera.zoom_factor -= 0.7;
                 } else {
-                    self.camera.zoom_factor += 0.3;
+                    self.camera.zoom_factor += 0.7;
                 }
                 self.camera.update_matrix();
                 self.camera.update_camera_buffer(&self.queue);
@@ -423,20 +431,6 @@ impl State {
 
             info!("mouse pos in game: {}", position_in_game)
         }
-
-        if let WindowEvent::MouseInput {
-            device_id,
-            state,
-            button,
-            modifiers,
-        } = event
-        {
-            self.world.add_obj(Box::new(Player {
-                name: "test player".to_string(),
-                position: self.mouse_position,
-            }))
-        }
-
         false
     }
 

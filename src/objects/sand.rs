@@ -4,6 +4,7 @@ use crate::enums::CellPhysicsType::Tap;
 use ecolor::Rgba;
 use glam::{IVec2, Vec2, Vec3, Vec3Swizzles};
 use hashbrown::HashMap;
+use log::info;
 use rayon::{prelude::*, vec};
 use turborand::{rng::Rng, *};
 use winit::event::{ElementState, MouseButton, VirtualKeyCode};
@@ -89,12 +90,10 @@ impl Chunk {
 
     pub fn get_index_below(index: usize) -> Option<usize> {
         if index >= CHUNK_SIZE.x as usize {
-            // Handle edge case for index in the top row
             if index < CHUNK_SIZE.x as usize {
                 return None;
             }
 
-            // Calculate index upwards using integer division
             Some(index - CHUNK_SIZE.x as usize)
         } else {
             None
@@ -122,7 +121,6 @@ impl Chunk {
                 if let Some(cell) = self.get(cell_pos) {
                     material_data.push(InstanceData {
                         position: (cell_pos.as_vec2() + cell.1 + chunk_pos_local),
-                        scale: 1.0,
                         color: cell.0 as u32,
                     })
                 }
@@ -140,6 +138,7 @@ pub struct CellWorld {
     pub assets: CellAssets,
     pub rand: Rng,
     pub is_move: bool,
+    pub selected: u32,
 }
 
 impl CellWorld {
@@ -226,6 +225,38 @@ impl CellWorld {
             assets,
             rand: Rng::new(),
             is_move: false,
+            selected: 0,
+        }
+    }
+
+    pub fn select_cell_type(&mut self, keycode: VirtualKeyCode, state: ElementState) {
+        match (keycode, state) {
+            (code, state) => match (code, state) {
+                (VirtualKeyCode::A, ElementState::Released) => {
+                    self.selected = if self.assets.get((self.selected - 1) as usize).is_some() {
+                        info!(
+                            "selected {:?}",
+                            self.assets.get((self.selected - 1) as usize)
+                        );
+                        self.selected - 1
+                    } else {
+                        self.selected
+                    }
+                }
+                (VirtualKeyCode::D, ElementState::Released) => {
+                    self.selected = if self.assets.get((self.selected + 1) as usize).is_some() {
+                        info!(
+                            "selected {:?}",
+                            self.assets.get((self.selected + 1) as usize)
+                        );
+                        self.selected + 1
+                    } else {
+                        self.selected
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
         }
     }
 
@@ -325,20 +356,30 @@ impl WorldObject for CellWorld {
 
     fn input(&mut self, delta_t: f32, event: &winit::event::WindowEvent, mouse_position: Vec2) {
         match event {
-            winit::event::WindowEvent::KeyboardInput {
-                device_id,
-                input,
-                is_synthetic,
-            } => match (input.virtual_keycode, input.state) {
-                (Some(code), state) => match (code, state) {
-                    (VirtualKeyCode::Q, ElementState::Released) => {
-                        self.is_move = !self.is_move;
+            winit::event::WindowEvent::KeyboardInput { input, .. } => {
+                match (input.virtual_keycode, input.state) {
+                    (Some(code), state) => {
+                        match (code, state) {
+                            (VirtualKeyCode::Q, ElementState::Released) => {
+                                self.is_move = !self.is_move;
+                            }
+                            _ => {}
+                        }
+                        self.select_cell_type(code, state)
                     }
                     _ => {}
-                },
+                }
+            }
+            winit::event::WindowEvent::MouseInput { state, button, .. } => match (state, button) {
+                (ElementState::Pressed, MouseButton::Left) => self.insert(
+                    mouse_position.as_ivec2(),
+                    Some((self.selected as usize, Vec2::ZERO)),
+                ),
+                (ElementState::Pressed, MouseButton::Right) => {
+                    self.insert(mouse_position.as_ivec2(), None)
+                }
                 _ => {}
             },
-
             _ => {}
         }
     }
