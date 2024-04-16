@@ -203,8 +203,8 @@ impl CellWorld {
 
         let mut tap_chunk = Chunk::default();
 
-        for i in 1..100 {
-            tap_chunk.cells[CHUNK_SIZE_LEN - i] = Some((4, Vec2::ZERO));
+        for i in 25..75 {
+            tap_chunk.cells[CHUNK_SIZE_LEN - i] = Some((2, Vec2::ZERO));
         }
 
         let mut chunks = HashMap::new();
@@ -212,8 +212,8 @@ impl CellWorld {
         chunks.insert(IVec2::ZERO, chunk);
         chunks.insert(IVec2::new(-1, -1), chunk.clone());
 
-        for x in -20..20 {
-            for y in -20..20 {
+        for x in -5..5 {
+            for y in -5..5 {
                 chunks.insert(IVec2::new(x, y), tap_chunk);
             }
         }

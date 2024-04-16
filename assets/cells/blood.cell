@@ -1,4 +1,4 @@
 physics_behavior = 'Fluid'
-color = [14, 21, 255, 47]
+color = [94, 28, 27, 255]
 name = "Blood"
 density = 1060
