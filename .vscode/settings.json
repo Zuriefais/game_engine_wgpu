@@ -15,7 +15,7 @@
         "winit",
         "Zuriefais"
     ],
-    "editor.fontFamily": "JetBrains Mono",
+    "editor.fontFamily": "Fira Code",
     "editor.fontLigatures": true,
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml",
