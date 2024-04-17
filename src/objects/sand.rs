@@ -17,14 +17,14 @@ use crate::{
 
 #[derive(Clone, Copy)]
 pub struct Chunk {
-    pub cells: [Option<(usize, Vec2)>; CHUNK_SIZE_LEN],
+    pub cells: [(usize, Vec2); CHUNK_SIZE_LEN],
     pub cell_count: usize,
 }
 
 impl Default for Chunk {
     fn default() -> Self {
         Self {
-            cells: [None; CHUNK_SIZE_LEN],
+            cells: [(0, Vec2::ZERO); CHUNK_SIZE_LEN],
             cell_count: 0,
         }
     }
@@ -32,10 +32,10 @@ impl Default for Chunk {
 
 impl Chunk {
     pub fn new_full(to_full: usize) -> Self {
-        let mut cells = [None; CHUNK_SIZE_LEN];
+        let mut cells = [(0, Vec2::ZERO); CHUNK_SIZE_LEN];
 
         for i in CHUNK_SIZE_LEN / 2..CHUNK_SIZE_LEN - 1 {
-            cells[i] = Some((0, Vec2::ZERO))
+            cells[i] = (0, Vec2::ZERO)
         }
 
         Self {
@@ -46,19 +46,19 @@ impl Chunk {
 
     pub fn get(&self, pos: IVec2) -> Option<(usize, Vec2)> {
         match Chunk::ivec_to_vec_index(pos) {
-            Some(index) => self.cells[index],
+            Some(index) => Some(self.cells[index]),
             None => None,
         }
     }
 
-    pub fn get_mut(&mut self, pos: IVec2) -> Option<&mut Option<(usize, Vec2)>> {
+    pub fn get_mut(&mut self, pos: IVec2) -> Option<&mut (usize, Vec2)> {
         match Chunk::ivec_to_vec_index(pos) {
             Some(index) => Some(&mut self.cells[index]),
             None => None,
         }
     }
 
-    pub fn insert(&mut self, pos: IVec2, cell: Option<(usize, Vec2)>) {
+    pub fn insert(&mut self, pos: IVec2, cell: (usize, Vec2)) {
         match self.get_mut(pos) {
             Some(some_cell) => {
                 *some_cell = cell;
@@ -101,7 +101,6 @@ impl Chunk {
     }
 
     pub fn global_pos_to_chunk_pos(global_pos: IVec2) -> IVec2 {
-        // Adjust the global_pos for modulo operation to ensure positive results
         let mod_x = ((global_pos.x % CHUNK_SIZE.x) + CHUNK_SIZE.x) % CHUNK_SIZE.x;
         let mod_y = ((global_pos.y % CHUNK_SIZE.y) + CHUNK_SIZE.y) % CHUNK_SIZE.y;
         IVec2::new(mod_x, mod_y)
@@ -119,10 +118,12 @@ impl Chunk {
             for x in 0..CHUNK_SIZE.x {
                 let cell_pos = IVec2 { x, y };
                 if let Some(cell) = self.get(cell_pos) {
-                    material_data.push(InstanceData {
-                        position: (cell_pos.as_vec2() + cell.1 + chunk_pos_local),
-                        color: cell.0 as u32,
-                    })
+                    if cell.0 != 0 {
+                        material_data.push(InstanceData {
+                            position: (cell_pos.as_vec2() + cell.1 + chunk_pos_local),
+                            color: (cell.0 - 1) as u32,
+                        })
+                    }
                 }
             }
         }
@@ -142,12 +143,12 @@ pub struct CellWorld {
 }
 
 impl CellWorld {
-    pub fn insert(&mut self, pos: IVec2, entity: Option<(usize, Vec2)>) {
+    pub fn insert(&mut self, pos: IVec2, cell: (usize, Vec2)) {
         match self.get_mut_chunk(pos) {
-            Some(chunk) => chunk.insert(Chunk::global_pos_to_chunk_pos(pos), entity),
+            Some(chunk) => chunk.insert(Chunk::global_pos_to_chunk_pos(pos), cell),
             None => {
                 let mut new_chunk = Chunk::default();
-                new_chunk.insert(Chunk::global_pos_to_chunk_pos(pos), entity);
+                new_chunk.insert(Chunk::global_pos_to_chunk_pos(pos), cell);
                 self.chunks
                     .insert(CellWorld::calculate_chunk_pos(pos), new_chunk);
                 self.chunk_count += 1;
@@ -178,7 +179,7 @@ impl CellWorld {
             .and_then(|chunk| chunk.get(Chunk::global_pos_to_chunk_pos(pos)))
     }
 
-    pub fn get_mut(&mut self, pos: IVec2) -> Option<&mut Option<(usize, Vec2)>> {
+    pub fn get_mut(&mut self, pos: IVec2) -> Option<&mut (usize, Vec2)> {
         let chunk_pos = CellWorld::calculate_chunk_pos(pos);
         self.chunks.get_mut(&chunk_pos)?.get_mut(pos % CHUNK_SIZE)
     }
@@ -204,7 +205,7 @@ impl CellWorld {
         let mut tap_chunk = Chunk::default();
 
         for i in 25..75 {
-            tap_chunk.cells[CHUNK_SIZE_LEN - i] = Some((2, Vec2::ZERO));
+            tap_chunk.cells[CHUNK_SIZE_LEN - i] = (3, Vec2::ZERO);
         }
 
         let mut chunks = HashMap::new();
@@ -225,14 +226,14 @@ impl CellWorld {
             assets,
             rand: Rng::new(),
             is_move: false,
-            selected: 0,
+            selected: 1,
         }
     }
 
     pub fn select_cell_type(&mut self, keycode: VirtualKeyCode, state: ElementState) {
         match (keycode, state) {
             (code, state) => match (code, state) {
-                (VirtualKeyCode::A, ElementState::Released) => {
+                (VirtualKeyCode::R, ElementState::Released) => {
                     self.selected = if self.assets.get((self.selected - 1) as usize).is_some() {
                         info!(
                             "selected {:?}",
@@ -243,7 +244,7 @@ impl CellWorld {
                         self.selected
                     }
                 }
-                (VirtualKeyCode::D, ElementState::Released) => {
+                (VirtualKeyCode::T, ElementState::Released) => {
                     self.selected = if self.assets.get((self.selected + 1) as usize).is_some() {
                         info!(
                             "selected {:?}",
@@ -286,14 +287,12 @@ impl CellWorld {
             }
             for to_move in to_move_list {
                 if let Some(cell) = chunk.cells.get_mut(to_move.1) {
-                    if let Some(cell) = cell {
-                        cell.1 = cell.1 + to_move.0;
-                    }
+                    cell.1 = cell.1 + to_move.0;
                 }
             }
             for to_insert in to_insert_list {
                 if let Some(cell) = chunk.cells.get_mut(to_insert.0) {
-                    *cell = Some(to_insert.1);
+                    *cell = to_insert.1;
                 }
             }
         }
@@ -309,21 +308,22 @@ fn cell_physics(
     assets: &CellAssets,
     mut rand: &mut Rng,
 ) {
-    match chunk.cells[i] {
-        Some(cell) => match assets.get(cell.0) {
-            Some(behavior) => match behavior.physics_behavior {
-                CellPhysicsType::Sand => {
-                    sand_physics(i, &chunk, &mut to_swap_list, &mut to_move_list, &mut rand);
-                }
-                CellPhysicsType::Fluid => {
-                    fluid_physics(i, &chunk, &mut to_swap_list, &mut to_move_list, &mut rand);
-                }
-                CellPhysicsType::Tap(to_spawn) => {
-                    tap_physics(&mut to_insert_list, i, chunk, &to_spawn, assets, &mut rand);
-                }
-                CellPhysicsType::Solid => {}
-            },
-            None => {}
+    let cell = chunk.cells[i];
+    if cell.0 == 0 {
+        return;
+    };
+    match assets.get(chunk.cells[i].0 - 1) {
+        Some(behavior) => match behavior.physics_behavior {
+            CellPhysicsType::Sand => {
+                sand_physics(i, &chunk, &mut to_swap_list, &mut to_move_list, &mut rand);
+            }
+            CellPhysicsType::Fluid => {
+                fluid_physics(i, &chunk, &mut to_swap_list, &mut to_move_list, &mut rand);
+            }
+            CellPhysicsType::Tap(to_spawn) => {
+                tap_physics(&mut to_insert_list, i, chunk, &to_spawn, assets, &mut rand);
+            }
+            CellPhysicsType::Solid => {}
         },
         None => {}
     }
@@ -373,10 +373,10 @@ impl WorldObject for CellWorld {
             winit::event::WindowEvent::MouseInput { state, button, .. } => match (state, button) {
                 (ElementState::Pressed, MouseButton::Left) => self.insert(
                     mouse_position.as_ivec2(),
-                    Some((self.selected as usize, Vec2::ZERO)),
+                    (self.selected as usize, Vec2::ZERO),
                 ),
                 (ElementState::Pressed, MouseButton::Right) => {
-                    self.insert(mouse_position.as_ivec2(), None)
+                    self.insert(mouse_position.as_ivec2(), (0, Vec2::ZERO))
                 }
                 _ => {}
             },
@@ -404,7 +404,7 @@ fn sand_physics(
 
     {
         if let Some(pos_below) = Chunk::get_index_below(i) {
-            if chunk.cells[pos_below].is_none() {
+            if chunk.cells[pos_below].0 == 0 {
                 to_swap_list.push((i, pos_below));
                 return;
             }
@@ -435,9 +435,9 @@ fn tap_physics(
     rand: &mut Rng,
 ) {
     if let Some(cell_below_index) = Chunk::get_index_below(i) {
-        if chunk.cells[cell_below_index].is_none() {
+        if chunk.cells[cell_below_index].0 == 0 {
             if let Some(asset_id) = assets.get_index_by_name(to_spawn.to_string()) {
-                to_insert_list.push((cell_below_index, (asset_id, Vec2::ZERO)))
+                to_insert_list.push((cell_below_index, (asset_id + 1, Vec2::ZERO)));
             }
         }
     };
@@ -454,7 +454,7 @@ fn fluid_physics(
 
     {
         if let Some(pos_below) = Chunk::get_index_below(i) {
-            if chunk.cells[pos_below].is_none() {
+            if chunk.cells[pos_below].0 == 0 {
                 to_swap_list.push((i, pos_below));
                 return;
             }
@@ -487,7 +487,7 @@ fn get_is_none_by_offset(chunk: &Chunk, pos: IVec2, offset: IVec2) -> Option<usi
     pos_offset += offset;
 
     if let Some(cell) = Chunk::ivec_to_vec_index(pos_offset) {
-        if chunk.cells[cell].is_none() {
+        if chunk.cells[cell].0 == 0 {
             Some(cell)
         } else {
             None
