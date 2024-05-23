@@ -94,7 +94,7 @@ impl Chunk {
                 return None;
             }
 
-            Some(index - CHUNK_SIZE.x as usize)
+            Some(index - CHUNK_SIZE.y as usize)
         } else {
             None
         }
@@ -413,9 +413,9 @@ fn sand_physics(
         }
     };
 
-    let is_none_below_left = get_is_none_by_offset(chunk, pos, IVec2 { x: -1, y: -1 });
+    let is_none_below_left = get_is_none_below_left(chunk, i);
 
-    let is_none_below_right = get_is_none_by_offset(chunk, pos, IVec2 { x: 1, y: -1 });
+    let is_none_below_right = get_is_none_below_right(chunk, i);
 
     move_if_none(
         to_swap_list,
@@ -434,13 +434,11 @@ fn tap_physics(
     assets: &CellAssets,
     rand: &mut Rng,
 ) {
-    if let Some(cell_below_index) = Chunk::get_index_below(i) {
-        if chunk.cells[cell_below_index].0 == 0 {
-            if let Some(asset_id) = assets.get_index_by_name(to_spawn.to_string()) {
-                to_insert_list.push((cell_below_index, (asset_id + 1, Vec2::ZERO)));
-            }
+    if let Some(i_below) = get_is_none_below(chunk, i) {
+        if let Some(asset_id) = assets.get_index_by_name(to_spawn.to_string()) {
+            to_insert_list.push((i_below, (asset_id + 1, Vec2::ZERO)));
         }
-    };
+    }
 }
 
 fn fluid_physics(
@@ -463,9 +461,9 @@ fn fluid_physics(
         }
     };
 
-    let is_none_below_left = get_is_none_by_offset(chunk, pos, IVec2 { x: -1, y: -1 });
+    let is_none_below_left = get_is_none_below_left(chunk, i);
 
-    let is_none_below_right = get_is_none_by_offset(chunk, pos, IVec2 { x: 1, y: -1 });
+    let is_none_below_right = get_is_none_below_right(chunk, i);
 
     move_if_none(
         to_swap_list,
@@ -475,14 +473,14 @@ fn fluid_physics(
         rand,
     );
 
-    let is_none_left = get_is_none_by_offset(chunk, pos, IVec2 { x: -1, y: 0 });
+    let is_none_left = get_is_none_left(chunk, i);
 
-    let is_none_right = get_is_none_by_offset(chunk, pos, IVec2 { x: 1, y: 0 });
+    let is_none_right = get_is_none_right(chunk, i);
 
     move_if_none(to_swap_list, is_none_left, is_none_right, i, rand)
 }
 
-fn get_is_none_by_offset(chunk: &Chunk, pos: IVec2, offset: IVec2) -> Option<usize> {
+fn get_is_none_by_offset_vec2(chunk: &Chunk, pos: IVec2, offset: IVec2) -> Option<usize> {
     let mut pos_offset = pos;
     pos_offset += offset;
 
@@ -495,6 +493,86 @@ fn get_is_none_by_offset(chunk: &Chunk, pos: IVec2, offset: IVec2) -> Option<usi
     } else {
         None
     }
+}
+
+fn get_is_none_below(chunk: &Chunk, i: usize) -> Option<usize> {
+    let i_below = i - CHUNK_SIZE.y as usize;
+    if let Some(cell) = chunk.cells.get(i_below) {
+        if cell.0 == 0 {
+            return Some(i_below);
+        }
+    }
+    None
+}
+
+fn get_is_none_left(chunk: &Chunk, i: usize) -> Option<usize> {
+    let i_below = i - 1;
+    if let Some(cell) = chunk.cells.get(i_below) {
+        if cell.0 == 0 {
+            return Some(i_below);
+        }
+    }
+    None
+}
+
+fn get_is_none_right(chunk: &Chunk, i: usize) -> Option<usize> {
+    let i_below = i + 1;
+    if let Some(cell) = chunk.cells.get(i_below) {
+        if cell.0 == 0 {
+            return Some(i_below);
+        }
+    }
+    None
+}
+
+fn get_is_none_up(chunk: &Chunk, i: usize) -> Option<usize> {
+    let i_below = i + CHUNK_SIZE.y as usize;
+    if let Some(cell) = chunk.cells.get(i_below) {
+        if cell.0 == 0 {
+            return Some(i_below);
+        }
+    }
+    None
+}
+
+fn get_is_none_below_right(chunk: &Chunk, i: usize) -> Option<usize> {
+    let i_below = i - CHUNK_SIZE.y as usize - 1;
+    if let Some(cell) = chunk.cells.get(i_below) {
+        if cell.0 == 0 {
+            return Some(i_below);
+        }
+    }
+    None
+}
+
+fn get_is_none_below_left(chunk: &Chunk, i: usize) -> Option<usize> {
+    let i_below = i - CHUNK_SIZE.y as usize + 1;
+    if let Some(cell) = chunk.cells.get(i_below) {
+        if cell.0 == 0 {
+            return Some(i_below);
+        }
+    }
+    None
+}
+
+fn get_is_none_up_right(chunk: &Chunk, i: usize) -> Option<usize> {
+    let i_below = i + CHUNK_SIZE.y as usize - 1;
+    if let Some(cell) = chunk.cells.get(i_below) {
+        if cell.0 == 0 {
+            return Some(i_below);
+        }
+    }
+    None
+}
+
+fn get_is_none_up_left(chunk: &Chunk, i: usize) -> Option<usize> {
+    let i_below = i + CHUNK_SIZE.y as usize + 1;
+    if let Some(cell) = chunk.cells.get(i_below) {
+        if cell.0 == 0 {
+            return Some(i_below);
+        }
+    }
+    None
 }
 
 fn move_if_none(
