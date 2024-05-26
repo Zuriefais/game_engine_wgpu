@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use ecolor::{Color32, Rgba};
+use ecolor::Rgba;
 use glam::Vec2;
 
 #[derive(Clone, Copy, Pod, Zeroable)]

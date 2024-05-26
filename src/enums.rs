@@ -1,6 +1,5 @@
 pub mod cell_assets;
 
-use ecolor::Rgba;
 use glam::{IVec2, Vec3};
 use serde::Deserialize;
 

@@ -1,8 +1,6 @@
 pub mod sand;
 
-use ecolor::{Color32, Rgba};
 use glam::Vec2;
-use log::info;
 use winit::event::WindowEvent;
 
 use crate::{instance_data::InstanceData, world::WorldObject};
@@ -36,7 +34,7 @@ impl WorldObject for Player {
     }
 
     fn get_name(&self) -> String {
-        return self.name.clone();
+        self.name.clone()
     }
 
     fn update(&mut self, delta_t: f32) {
@@ -45,7 +43,7 @@ impl WorldObject for Player {
 
     fn input(&mut self, delta_t: f32, event: &winit::event::WindowEvent, mouse_position: Vec2) {
         match event {
-            WindowEvent::CursorMoved { position, .. } => {
+            WindowEvent::CursorMoved { .. } => {
                 // info!(
                 //     "input for object: {}, mouse pos: {:?}",
                 //     self.get_name(),

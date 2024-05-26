@@ -1,10 +1,6 @@
-use std::path;
-
-use ecolor::{Color32, HexColor, Rgba};
+use ecolor::Rgba;
 use hashbrown::HashMap;
 use log::{info, warn};
-use ron::Deserializer;
-use ron::*;
 use serde::*;
 
 use super::CellPhysicsType;
@@ -34,7 +30,7 @@ pub struct ConfigAsset {
 impl CellAssets {
     pub fn get_by_name(&self, name: String) -> Option<CellAsset> {
         if let Some(handle_index) = self.assets_ids_map.get(&name) {
-            return self.assets.get(handle_index.clone()).cloned();
+            return self.assets.get(*handle_index).cloned();
         }
 
         None
@@ -49,7 +45,7 @@ impl CellAssets {
     }
 
     pub fn get_color(&self, i: usize) -> Option<Rgba> {
-        Some(self.assets_color_vec[i].clone())
+        Some(self.assets_color_vec[i])
     }
 
     pub fn get_physics_behavior(&self, i: usize) -> Option<CellPhysicsType> {
@@ -58,7 +54,7 @@ impl CellAssets {
 
     pub fn get_color_by_name(&self, name: String) -> Option<Rgba> {
         if let Some(handle_index) = self.assets_ids_map.get(&name) {
-            return Some(self.assets_color_vec[*handle_index].clone());
+            return Some(self.assets_color_vec[*handle_index]);
         }
         None
     }

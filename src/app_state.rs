@@ -1,9 +1,7 @@
 use core::panic;
-use ecolor::{Color32, Rgba};
-use glam::{Mat4, Vec2, Vec4, Vec4Swizzles};
+use ecolor::Rgba;
+use glam::{Mat4, Vec2, Vec4};
 use log::info;
-#[feature(duration_millis_float)]
-use std::time::Duration;
 use std::{fs, time::Instant};
 use wgpu::{util::DeviceExt, Buffer};
 use winit::{
@@ -12,11 +10,10 @@ use winit::{
 };
 
 use crate::{
-    camera::{self, Camera, CameraUniform},
+    camera::{Camera, CameraUniform},
     constants::{INDICES, VERTICES},
-    enums::cell_assets::{self, import_assets, CellAssets},
+    enums::cell_assets::import_assets,
     instance_data::{InstanceData, Palette},
-    objects::Player,
     world::{World, WorldObject},
     Vertex,
 };
@@ -93,8 +90,7 @@ impl State {
             .formats
             .iter()
             .copied()
-            .filter(|f| f.is_srgb())
-            .next()
+            .find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -107,7 +103,7 @@ impl State {
         };
         surface.configure(&device, &config);
         let shader_file = {
-            match fs::read_to_string("assets/shaders/shader.wgsl".to_string()) {
+            match fs::read_to_string("assets/shaders/shader.wgsl") {
                 Ok(str) => str,
                 Err(_) => {
                     panic!("could't load shader at path: assets/shaders/shader.wgsl ")
@@ -213,13 +209,13 @@ impl State {
         let mut palette = Palette {
             values: [Rgba::RED; 16],
         };
-        for i in (0..16) {
+        for i in 0..16 {
             if let Some(color) = assets.assets_color_vec.get(i) {
-                palette.values[i] = color.clone();
+                palette.values[i] = *color;
             }
         }
 
-        let mut world = World::init_world(assets);
+        let world = World::init_world(assets);
 
         let colors_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Colors Buffer"),
@@ -286,7 +282,7 @@ impl State {
 
         let instance_buffer_len = instances.len();
 
-        return Self {
+        Self {
             surface,
             device,
             queue,
@@ -305,7 +301,7 @@ impl State {
             instance_buffer_len,
             mouse_position: Vec2::ZERO,
             colors_buffer,
-        };
+        }
     }
 
     pub fn window(&self) -> &Window {

@@ -1,16 +1,13 @@
-use crate::enums::cell_assets::import_assets;
 use crate::enums::CellPhysicsType;
-use crate::enums::CellPhysicsType::Tap;
-use ecolor::Rgba;
-use glam::{IVec2, Vec2, Vec3, Vec3Swizzles};
+use glam::{IVec2, Vec2};
 use hashbrown::HashMap;
 use log::info;
-use rayon::{prelude::*, vec};
+use rayon::prelude::*;
 use turborand::{rng::Rng, *};
 use winit::event::{ElementState, MouseButton, VirtualKeyCode};
 
 use crate::{
-    enums::{cell_assets::CellAssets, CELL_SIZE, CHUNK_SIZE, CHUNK_SIZE_LEN},
+    enums::{cell_assets::CellAssets, CHUNK_SIZE, CHUNK_SIZE_LEN},
     instance_data::InstanceData,
     world::WorldObject,
 };
@@ -45,10 +42,7 @@ impl Chunk {
     }
 
     pub fn get(&self, pos: IVec2) -> Option<(usize, Vec2)> {
-        match Chunk::ivec_to_vec_index(pos) {
-            Some(index) => Some(self.cells[index]),
-            None => None,
-        }
+        Chunk::ivec_to_vec_index(pos).map(|index| self.cells[index])
     }
 
     pub fn get_mut(&mut self, pos: IVec2) -> Option<&mut (usize, Vec2)> {
@@ -211,7 +205,7 @@ impl CellWorld {
         let mut chunks = HashMap::new();
 
         chunks.insert(IVec2::ZERO, chunk);
-        chunks.insert(IVec2::new(-1, -1), chunk.clone());
+        chunks.insert(IVec2::new(-1, -1), chunk);
 
         for x in -5..5 {
             for y in -5..5 {
@@ -287,7 +281,7 @@ impl CellWorld {
             }
             for to_move in to_move_list {
                 if let Some(cell) = chunk.cells.get_mut(to_move.1) {
-                    cell.1 = cell.1 + to_move.0;
+                    cell.1 += to_move.0;
                 }
             }
             for to_insert in to_insert_list {
@@ -315,13 +309,13 @@ fn cell_physics(
     match assets.get(chunk.cells[i].0 - 1) {
         Some(behavior) => match behavior.physics_behavior {
             CellPhysicsType::Sand => {
-                sand_physics(i, &chunk, &mut to_swap_list, &mut to_move_list, &mut rand);
+                sand_physics(i, chunk, to_swap_list, to_move_list, rand);
             }
             CellPhysicsType::Fluid => {
-                fluid_physics(i, &chunk, &mut to_swap_list, &mut to_move_list, &mut rand);
+                fluid_physics(i, chunk, to_swap_list, to_move_list, rand);
             }
             CellPhysicsType::Tap(to_spawn) => {
-                tap_physics(&mut to_insert_list, i, chunk, &to_spawn, assets, &mut rand);
+                tap_physics(to_insert_list, i, chunk, &to_spawn, assets, rand);
             }
             CellPhysicsType::Solid => {}
         },
@@ -343,7 +337,7 @@ impl WorldObject for CellWorld {
 
         let instance_data_vec = pos_and_chunks
             .into_iter()
-            .map(|(pos, chunk)| (pos, chunk.clone())) // Clone to avoid borrowing issues
+            .map(|(pos, chunk)| (pos, chunk)) // Clone to avoid borrowing issues
             .par_bridge() // Use par_bridge to enable parallel processing
             .map(|(index, chunk)| chunk.1.render(*chunk.0 * CHUNK_SIZE))
             .collect::<Vec<_>>();
@@ -351,7 +345,7 @@ impl WorldObject for CellWorld {
         for mut arr in instance_data_vec {
             data.append(&mut arr)
         }
-        return data;
+        data
     }
 
     fn input(&mut self, delta_t: f32, event: &winit::event::WindowEvent, mouse_position: Vec2) {
@@ -402,15 +396,13 @@ fn sand_physics(
 ) {
     let pos = Chunk::vec_index_to_ivec(i).unwrap();
 
-    {
-        if let Some(pos_below) = Chunk::get_index_below(i) {
-            if chunk.cells[pos_below].0 == 0 {
-                to_swap_list.push((i, pos_below));
-                return;
-            }
-        } else {
+    if let Some(pos_below) = Chunk::get_index_below(i) {
+        if chunk.cells[pos_below].0 == 0 {
+            to_swap_list.push((i, pos_below));
             return;
         }
+    } else {
+        return;
     };
 
     let is_none_below_left = get_is_none_below_left(chunk, i);
@@ -450,15 +442,13 @@ fn fluid_physics(
 ) {
     let pos = Chunk::vec_index_to_ivec(i).unwrap();
 
-    {
-        if let Some(pos_below) = Chunk::get_index_below(i) {
-            if chunk.cells[pos_below].0 == 0 {
-                to_swap_list.push((i, pos_below));
-                return;
-            }
-        } else {
+    if let Some(pos_below) = Chunk::get_index_below(i) {
+        if chunk.cells[pos_below].0 == 0 {
+            to_swap_list.push((i, pos_below));
             return;
         }
+    } else {
+        return;
     };
 
     let is_none_below_left = get_is_none_below_left(chunk, i);
@@ -484,15 +474,7 @@ fn get_is_none_by_offset_vec2(chunk: &Chunk, pos: IVec2, offset: IVec2) -> Optio
     let mut pos_offset = pos;
     pos_offset += offset;
 
-    if let Some(cell) = Chunk::ivec_to_vec_index(pos_offset) {
-        if chunk.cells[cell].0 == 0 {
-            Some(cell)
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+    Chunk::ivec_to_vec_index(pos_offset).filter(|&cell| chunk.cells[cell].0 == 0)
 }
 
 fn get_is_none_below(chunk: &Chunk, i: usize) -> Option<usize> {
@@ -586,11 +568,9 @@ fn move_if_none(
         (None, None) => {}
         (None, Some(cell)) => {
             to_swap_list.push((cell, i));
-            return;
         }
         (Some(cell), None) => {
             to_swap_list.push((cell, i));
-            return;
         }
         (Some(cell), Some(cell2)) => {
             if rand.bool() {
@@ -598,7 +578,6 @@ fn move_if_none(
             } else {
                 to_swap_list.push((cell2, i))
             }
-            return;
         }
     }
 }

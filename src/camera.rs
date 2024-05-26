@@ -71,16 +71,14 @@ impl Camera {
         let adjusted_bottom = self.bottom + (self.bottom * zoom_factor);
         let adjusted_top = self.top + (self.top * zoom_factor);
 
-        let projection_matrix = Mat4::orthographic_lh(
+        Mat4::orthographic_lh(
             adjusted_left,
             adjusted_right,
             adjusted_bottom,
             adjusted_top,
             self.near,
             self.far,
-        );
-
-        projection_matrix //* transform_matrix
+        ) //* transform_matrix
     }
 
     pub fn create_camera_from_screen_size(

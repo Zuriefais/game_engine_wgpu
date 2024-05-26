@@ -9,6 +9,7 @@ pub struct WorldObjectContainer {
     pub obj: Box<dyn WorldObject>,
 }
 
+#[derive(Default)]
 pub struct World {
     pub storage: Vec<Box<dyn WorldObject>>,
     pub assets: CellAssets,
@@ -57,15 +58,6 @@ impl World {
         world.add_obj(sand);
 
         world
-    }
-}
-
-impl Default for World {
-    fn default() -> Self {
-        Self {
-            storage: Default::default(),
-            assets: CellAssets::default(),
-        }
     }
 }
 
