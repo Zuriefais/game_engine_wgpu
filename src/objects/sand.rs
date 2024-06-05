@@ -32,7 +32,7 @@ impl Default for Chunk {
 
 impl Chunk {
     pub fn new_full(to_full: usize) -> Self {
-        let mut cells = [(0, Vec2::ZERO); CHUNK_SIZE_LEN];
+        let mut cells = [(to_full, Vec2::ZERO); CHUNK_SIZE_LEN];
 
         for i in CHUNK_SIZE_LEN / 2..CHUNK_SIZE_LEN - 1 {
             cells[i] = (0, Vec2::ZERO)
@@ -229,31 +229,28 @@ impl CellWorld {
 
     pub fn select_cell_type(&mut self, keycode: PhysicalKey, state: ElementState) {
         match (keycode, state) {
-            (code, state) => match (code, state) {
-                (PhysicalKey::Code(KeyCode::KeyR), ElementState::Released) => {
-                    self.selected = if self.assets.get((self.selected - 1) as usize).is_some() {
-                        info!(
-                            "selected {:?}",
-                            self.assets.get((self.selected - 1) as usize)
-                        );
-                        self.selected - 1
-                    } else {
-                        self.selected
-                    }
+            (PhysicalKey::Code(KeyCode::KeyR), ElementState::Released) => {
+                self.selected = if self.assets.get((self.selected - 1) as usize).is_some() {
+                    info!(
+                        "selected {:?}",
+                        self.assets.get((self.selected - 1) as usize)
+                    );
+                    self.selected - 1
+                } else {
+                    self.selected
                 }
-                (PhysicalKey::Code(KeyCode::KeyT), ElementState::Released) => {
-                    self.selected = if self.assets.get((self.selected + 1) as usize).is_some() {
-                        info!(
-                            "selected {:?}",
-                            self.assets.get((self.selected + 1) as usize)
-                        );
-                        self.selected + 1
-                    } else {
-                        self.selected
-                    }
+            }
+            (PhysicalKey::Code(KeyCode::KeyT), ElementState::Released) => {
+                self.selected = if self.assets.get((self.selected + 1) as usize).is_some() {
+                    info!(
+                        "selected {:?}",
+                        self.assets.get((self.selected + 1) as usize)
+                    );
+                    self.selected + 1
+                } else {
+                    self.selected
                 }
-                _ => {}
-            },
+            }
             _ => {}
         }
     }

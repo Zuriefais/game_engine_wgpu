@@ -112,7 +112,7 @@ impl Camera {
         )
     }
 
-    pub fn update_matrix_from_screen_size(&mut self, width: f32, height: f32, near: f32, far: f32) {
+    pub fn update_matrix_from_screen_size(&mut self, width: f32, height: f32) {
         let aspect = width / height;
         let left = -aspect / 2.0;
         let right = aspect / 2.0;

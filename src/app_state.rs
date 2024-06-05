@@ -10,14 +10,13 @@ use winit::{
     window::Window,
 };
 
-use crate::world::WorldObject;
+use crate::constants::Vertex;
 use crate::{
     camera::{Camera, CameraUniform},
     constants::{INDICES, VERTICES},
     enums::cell_assets::import_assets,
     instance_data::{InstanceData, Palette},
     world::World,
-    Vertex,
 };
 
 pub struct State<'a> {
@@ -315,12 +314,8 @@ impl<'a> State<'a> {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.camera.update_matrix_from_screen_size(
-                self.size.width as f32,
-                self.size.height as f32,
-                self.camera.near,
-                self.camera.far,
-            );
+            self.camera
+                .update_matrix_from_screen_size(self.size.width as f32, self.size.height as f32);
             self.camera.update_camera_buffer(&self.queue);
         }
     }
