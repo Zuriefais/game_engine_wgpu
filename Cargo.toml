@@ -4,23 +4,27 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-winit = "0.28"
+winit = "0.30"
 env_logger = "0.11.3"
 log = "0.4"
-wgpu = {version = "0.18", features = ["glsl"]}
+wgpu = { version = "0.20", features = ["glsl"] }
 pollster = "0.3.0"
-glam = {version = "0.27.0", features = ["bytemuck"]}
-bytemuck = {version = "1.14.3", features = ["derive"]}
-hashbrown = {version = "0.14.3", features = ["serde", "rayon"]}
-serde = {version="*", features=["derive"]}
+glam = { version = "0.27.0", features = ["bytemuck"] }
+bytemuck = { version = "1.14.3", features = ["derive"] }
+hashbrown = { version = "0.14.3", features = ["serde", "rayon"] }
+serde = { version = "*", features = ["derive"] }
 serde_derive = "*"
 ron = "0.8.1"
 lazy_static = "1.4.0"
 color-hex = "*"
-ecolor = {features = ["serde", "bytemuck", "color-hex", "cint"], version="*"}
+ecolor = { features = [
+    "serde",
+    "bytemuck",
+    "color-hex",
+    "cint",
+], version = "*" }
 toml = "0.8.12"
 turborand = "0.10.1"
-egui-wgpu = "=0.25"
 rayon = "1.10.0"
 
 [build]

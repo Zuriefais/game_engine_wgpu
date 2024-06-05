@@ -4,7 +4,10 @@ use hashbrown::HashMap;
 use log::info;
 use rayon::prelude::*;
 use turborand::{rng::Rng, *};
-use winit::event::{ElementState, MouseButton, VirtualKeyCode};
+use winit::{
+    event::{ElementState, MouseButton},
+    keyboard::{KeyCode, PhysicalKey},
+};
 
 use crate::{
     enums::{cell_assets::CellAssets, CHUNK_SIZE, CHUNK_SIZE_LEN},
@@ -224,10 +227,10 @@ impl CellWorld {
         }
     }
 
-    pub fn select_cell_type(&mut self, keycode: VirtualKeyCode, state: ElementState) {
+    pub fn select_cell_type(&mut self, keycode: PhysicalKey, state: ElementState) {
         match (keycode, state) {
             (code, state) => match (code, state) {
-                (VirtualKeyCode::R, ElementState::Released) => {
+                (PhysicalKey::Code(KeyCode::KeyR), ElementState::Released) => {
                     self.selected = if self.assets.get((self.selected - 1) as usize).is_some() {
                         info!(
                             "selected {:?}",
@@ -238,7 +241,7 @@ impl CellWorld {
                         self.selected
                     }
                 }
-                (VirtualKeyCode::T, ElementState::Released) => {
+                (PhysicalKey::Code(KeyCode::KeyT), ElementState::Released) => {
                     self.selected = if self.assets.get((self.selected + 1) as usize).is_some() {
                         info!(
                             "selected {:?}",
@@ -294,13 +297,13 @@ impl CellWorld {
 }
 
 fn cell_physics(
-    mut to_swap_list: &mut Vec<(usize, usize)>,
-    mut to_insert_list: &mut Vec<(usize, (usize, Vec2))>,
-    mut to_move_list: &mut Vec<(Vec2, usize)>,
+    to_swap_list: &mut Vec<(usize, usize)>,
+    to_insert_list: &mut Vec<(usize, (usize, Vec2))>,
+    to_move_list: &mut Vec<(Vec2, usize)>,
     i: usize,
     chunk: &Chunk,
     assets: &CellAssets,
-    mut rand: &mut Rng,
+    rand: &mut Rng,
 ) {
     let cell = chunk.cells[i];
     if cell.0 == 0 {
@@ -336,8 +339,7 @@ impl WorldObject for CellWorld {
         let pos_and_chunks = self.chunks.iter().enumerate();
 
         let instance_data_vec = pos_and_chunks
-            .into_iter()
-            .map(|(pos, chunk)| (pos, chunk)) // Clone to avoid borrowing issues
+            .into_iter() // Clone to avoid borrowing issues
             .par_bridge() // Use par_bridge to enable parallel processing
             .map(|(index, chunk)| chunk.1.render(*chunk.0 * CHUNK_SIZE))
             .collect::<Vec<_>>();
@@ -350,11 +352,11 @@ impl WorldObject for CellWorld {
 
     fn input(&mut self, delta_t: f32, event: &winit::event::WindowEvent, mouse_position: Vec2) {
         match event {
-            winit::event::WindowEvent::KeyboardInput { input, .. } => {
-                match (input.virtual_keycode, input.state) {
-                    (Some(code), state) => {
+            winit::event::WindowEvent::KeyboardInput { event, .. } => {
+                match (event.physical_key, event.state) {
+                    (code, state) => {
                         match (code, state) {
-                            (VirtualKeyCode::Q, ElementState::Released) => {
+                            (PhysicalKey::Code(KeyCode::KeyR), ElementState::Released) => {
                                 self.is_move = !self.is_move;
                             }
                             _ => {}

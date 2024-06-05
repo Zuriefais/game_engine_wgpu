@@ -1,10 +1,12 @@
 pub mod sand;
 
 use glam::Vec2;
-use winit::event::WindowEvent;
+use winit::{
+    event::WindowEvent,
+    keyboard::{KeyCode, PhysicalKey},
+};
 
 use crate::{instance_data::InstanceData, world::WorldObject};
-use winit::event::VirtualKeyCode;
 
 pub struct Player {
     pub(crate) name: String,
@@ -50,19 +52,19 @@ impl WorldObject for Player {
                 //     position
                 // );
             }
-            WindowEvent::KeyboardInput { input, .. } => {
+            WindowEvent::KeyboardInput { event, .. } => {
                 let mut direction = Vec2::ZERO;
-                match input.virtual_keycode {
-                    Some(VirtualKeyCode::W) => {
+                match event.physical_key {
+                    PhysicalKey::Code(KeyCode::KeyW) => {
                         direction.y = 1.0;
                     }
-                    Some(VirtualKeyCode::A) => {
+                    PhysicalKey::Code(KeyCode::KeyA) => {
                         direction.x = -1.0;
                     }
-                    Some(VirtualKeyCode::S) => {
+                    PhysicalKey::Code(KeyCode::KeyS) => {
                         direction.y = -1.0;
                     }
-                    Some(VirtualKeyCode::D) => {
+                    PhysicalKey::Code(KeyCode::KeyD) => {
                         direction.x = 1.0;
                     }
                     _ => {}

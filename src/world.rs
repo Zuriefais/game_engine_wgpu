@@ -72,11 +72,11 @@ pub trait WorldObject {
 
     fn input(&mut self, delta_t: f32, event: &WindowEvent, mouse_position: Vec2) {
         match event {
-            WindowEvent::KeyboardInput { input, .. } => {
+            WindowEvent::KeyboardInput { event, .. } => {
                 info!(
                     "input for object: {}, key pressed: {:?}",
                     self.get_name(),
-                    input
+                    event
                 );
             }
             WindowEvent::MouseInput { state, button, .. } => {

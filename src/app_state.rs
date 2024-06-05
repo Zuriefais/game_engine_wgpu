@@ -2,29 +2,31 @@ use core::panic;
 use ecolor::Rgba;
 use glam::{Mat4, Vec2, Vec4};
 use log::info;
-use std::{fs, time::Instant};
+use std::{fs, sync::Arc, time::Instant};
 use wgpu::{util::DeviceExt, Buffer};
 use winit::{
-    event::{MouseScrollDelta, VirtualKeyCode, WindowEvent},
+    event::{MouseScrollDelta, WindowEvent},
+    keyboard::{KeyCode, PhysicalKey},
     window::Window,
 };
 
+use crate::world::WorldObject;
 use crate::{
     camera::{Camera, CameraUniform},
     constants::{INDICES, VERTICES},
     enums::cell_assets::import_assets,
     instance_data::{InstanceData, Palette},
-    world::{World, WorldObject},
+    world::World,
     Vertex,
 };
 
-pub struct State {
-    pub surface: wgpu::Surface,
+pub struct State<'a> {
+    pub instance: wgpu::Instance,
+    pub surface: wgpu::Surface<'a>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
-    pub window: Window,
     pub render_pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: Buffer,
     pub index_buffer: Buffer,
@@ -39,9 +41,9 @@ pub struct State {
     pub colors_buffer: Buffer,
 }
 
-impl State {
+impl<'a> State<'a> {
     // Creating some of the wgpu types requires async code
-    pub async fn new(window: Window) -> Self {
+    pub async fn new(window: Arc<Window>) -> Self {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -55,7 +57,7 @@ impl State {
         //
         // The surface needs to live as long as the window that created it.
         // State owns the window, so this should be safe.
-        let surface = unsafe { instance.create_surface(&window) }.unwrap();
+        let surface = instance.create_surface(Arc::clone(&window)).unwrap();
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -70,10 +72,10 @@ impl State {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: wgpu::Features::empty(),
+                    required_features: wgpu::Features::empty(),
                     // WebGL doesn't support all of wgpu's features, so if
                     // we're building for the web, we'll have to disable some.
-                    limits: wgpu::Limits::default(),
+                    required_limits: wgpu::Limits::default(),
 
                     label: None,
                 },
@@ -100,6 +102,7 @@ impl State {
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
+            desired_maximum_frame_latency: Default::default(),
         };
         surface.configure(&device, &config);
         let shader_file = {
@@ -154,8 +157,9 @@ impl State {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main",                           // 1.
-                buffers: &[Vertex::desc(), InstanceData::desc()], // 2.
+                entry_point: "vs_main", // 1.
+                buffers: &[Vertex::desc(), InstanceData::desc()],
+                compilation_options: Default::default(), // 2.
             },
             fragment: Some(wgpu::FragmentState {
                 // 3.
@@ -167,6 +171,7 @@ impl State {
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList, // 1.
@@ -283,12 +288,12 @@ impl State {
         let instance_buffer_len = instances.len();
 
         Self {
+            instance,
             surface,
             device,
             queue,
             config,
             size,
-            window,
             render_pipeline,
             vertex_buffer,
             index_buffer,
@@ -302,10 +307,6 @@ impl State {
             mouse_position: Vec2::ZERO,
             colors_buffer,
         }
-    }
-
-    pub fn window(&self) -> &Window {
-        &self.window
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -391,19 +392,19 @@ impl State {
             }
         }
 
-        if let WindowEvent::KeyboardInput { input, .. } = event {
+        if let WindowEvent::KeyboardInput { event, .. } = event {
             let mut direction = Vec2::ZERO;
-            match input.virtual_keycode {
-                Some(VirtualKeyCode::W) => {
+            match event.physical_key {
+                PhysicalKey::Code(KeyCode::KeyW) => {
                     direction.y = 1.0;
                 }
-                Some(VirtualKeyCode::A) => {
+                PhysicalKey::Code(KeyCode::KeyA) => {
                     direction.x = -1.0;
                 }
-                Some(VirtualKeyCode::S) => {
+                PhysicalKey::Code(KeyCode::KeyS) => {
                     direction.y = -1.0;
                 }
-                Some(VirtualKeyCode::D) => {
+                PhysicalKey::Code(KeyCode::KeyD) => {
                     direction.x = 1.0;
                 }
                 _ => {}
