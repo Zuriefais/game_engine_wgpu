@@ -1,0 +1,9 @@
+cell_paths = [
+  "cells/blood.toml",
+  "cells/stone.toml",
+  "cells/blood_stone.toml",
+  "cells/water.toml",
+  "cells/just_tap.toml",
+  "cells/donut_stone.toml",
+  "cells/sand.toml",
+]

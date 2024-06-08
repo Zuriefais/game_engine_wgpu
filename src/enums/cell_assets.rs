@@ -76,7 +76,7 @@ impl CellAssets {
 }
 
 pub fn import_assets() -> Option<CellAssets> {
-    let contents = fs::read_to_string("assets/config.config");
+    let contents = fs::read_to_string("assets/config.toml");
 
     if let Ok(paths_config_str) = contents {
         let config: ConfigAsset = toml::from_str(&paths_config_str).expect("Could't load config");
