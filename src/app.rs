@@ -55,6 +55,7 @@ impl ApplicationHandler for App<'_> {
             WindowEvent::RedrawRequested => {
                 println!("Redraw requested");
                 state.unwrap().render();
+                self.window.as_ref().unwrap().request_redraw();
             }
             event => {
                 if let Some(state) = state {
