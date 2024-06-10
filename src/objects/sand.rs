@@ -351,15 +351,10 @@ impl WorldObject for CellWorld {
         match event {
             winit::event::WindowEvent::KeyboardInput { event, .. } => {
                 match (event.physical_key, event.state) {
-                    (code, state) => {
-                        match (code, state) {
-                            (PhysicalKey::Code(KeyCode::KeyR), ElementState::Released) => {
-                                self.is_move = !self.is_move;
-                            }
-                            _ => {}
-                        }
-                        self.select_cell_type(code, state)
+                    (PhysicalKey::Code(KeyCode::KeyR), ElementState::Released) => {
+                        self.is_move = !self.is_move;
                     }
+                    (code, state) => self.select_cell_type(code, state),
                     _ => {}
                 }
             }

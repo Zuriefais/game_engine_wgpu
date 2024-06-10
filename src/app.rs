@@ -53,7 +53,6 @@ impl ApplicationHandler for App<'_> {
                 state.unwrap().resize(physical_size);
             }
             WindowEvent::RedrawRequested => {
-                println!("Redraw requested");
                 state.unwrap().render();
                 self.window.as_ref().unwrap().request_redraw();
             }
