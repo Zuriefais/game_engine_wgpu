@@ -3,14 +3,18 @@ use ecolor::Rgba;
 use glam::{Mat4, Vec2, Vec4};
 use log::info;
 use std::{fs, sync::Arc, time::Instant};
-use wgpu::{util::DeviceExt, Buffer};
+use wgpu::{
+    util::DeviceExt, BindGroup, BindGroupLayout, Buffer, ComputePipeline,
+    ComputePipelineDescriptor, RenderPipeline, Texture, TextureDescriptor,
+    TextureFormat, TextureUsages,
+};
 use winit::{
+    dpi::PhysicalSize,
     event::{MouseScrollDelta, WindowEvent},
     keyboard::{KeyCode, PhysicalKey},
     window::Window,
 };
 
-use crate::constants::Vertex;
 use crate::{
     camera::{Camera, CameraUniform},
     constants::{INDICES, VERTICES},
@@ -18,6 +22,7 @@ use crate::{
     instance_data::{InstanceData, Palette},
     world::World,
 };
+use crate::{constants::Vertex, enums::cell_assets::CellAssets};
 
 pub struct State<'a> {
     pub instance: wgpu::Instance,
@@ -27,6 +32,9 @@ pub struct State<'a> {
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
+    pub compute_pipeline: wgpu::ComputePipeline,
+    pub compute_bind_group: wgpu::BindGroup,
+    pub compute_bind_layout: wgpu::BindGroupLayout,
     pub vertex_buffer: Buffer,
     pub index_buffer: Buffer,
     pub num_vertices: u32,
@@ -38,72 +46,120 @@ pub struct State<'a> {
     pub instance_buffer_len: usize,
     pub mouse_position: Vec2,
     pub colors_buffer: Buffer,
+    pub camera_bind_group: BindGroup,
 }
 
 impl<'a> State<'a> {
-    // Creating some of the wgpu types requires async code
-    pub async fn new(window: Arc<Window>) -> Self {
-        let size = window.inner_size();
+    fn create_screen_sized_texture(size: PhysicalSize<u32>, device: &wgpu::Device) -> Texture {
+        
 
-        // The instance is a handle to our GPU
-        // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::PRIMARY,
-            ..Default::default()
+        device.create_texture(&TextureDescriptor {
+            label: Some("screen sized texture"),
+            size: wgpu::Extent3d {
+                width: size.width,
+                height: size.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: TextureFormat::Rgba8Unorm,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::STORAGE_BINDING,
+            view_formats: &[TextureFormat::Rgba8Unorm],
+        })
+    }
+
+    fn init_compute_pipeline(
+        device: &wgpu::Device,
+        size: PhysicalSize<u32>,
+    ) -> (ComputePipeline, BindGroup, BindGroupLayout) {
+        let compute_shader_file = {
+            match fs::read_to_string("assets/shaders/compute_render.wgsl") {
+                Ok(str) => str,
+                Err(_) => {
+                    panic!("could't load shader at path: assets/shaders/compute_render.wgsl ")
+                }
+            }
+        };
+        let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Sand compute shader"),
+            source: wgpu::ShaderSource::Wgsl(compute_shader_file.into()),
         });
 
-        // # Safety
-        //
-        // The surface needs to live as long as the window that created it.
-        // State owns the window, so this should be safe.
-        let surface = instance.create_surface(Arc::clone(&window)).unwrap();
+        let compute_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::StorageTexture {
+                        access: wgpu::StorageTextureAccess::WriteOnly,
+                        format: TextureFormat::Rgba8Unorm,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                    },
+                    count: None, // Not an array
+                }],
+                label: Some("out_texture_bind_group_layout"),
+            });
+        let output = State::create_screen_sized_texture(size, device);
+        let view = output.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
-            })
-            .await
-            .unwrap();
-        info!("{:?}", adapter.get_info());
+        let compute_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &compute_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&view),
+            }],
+            label: Some("out_texture_bind_group"),
+        });
 
-        let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    required_features: wgpu::Features::empty(),
-                    // WebGL doesn't support all of wgpu's features, so if
-                    // we're building for the web, we'll have to disable some.
-                    required_limits: wgpu::Limits::default(),
+        let compute_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Compute sand renderer layout"),
+                bind_group_layouts: &[&compute_bind_group_layout],
+                push_constant_ranges: &[],
+            });
 
-                    label: None,
-                },
-                None, // Trace path
-            )
-            .await
-            .unwrap();
-
-        let surface_caps = surface.get_capabilities(&adapter);
-        // Shader code in this tutorial assumes an sRGB surface texture. Using a different
-        // one will result in all the colors coming out darker. If you want to support non
-        // sRGB surfaces, you'll need to account for that when drawing to the frame.
-        let surface_format = surface_caps
-            .formats
-            .iter()
-            .copied()
-            .find(|f| f.is_srgb())
-            .unwrap_or(surface_caps.formats[0]);
-        let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface_format,
-            width: size.width,
-            height: size.height,
-            present_mode: surface_caps.present_modes[0],
-            alpha_mode: surface_caps.alpha_modes[0],
-            view_formats: vec![],
-            desired_maximum_frame_latency: Default::default(),
+        let compute_pipeline_desc = ComputePipelineDescriptor {
+            label: Some("Compute sand render"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: "main",
+            compilation_options: Default::default(),
         };
-        surface.configure(&device, &config);
+
+        (
+            device.create_compute_pipeline(&compute_pipeline_desc),
+            compute_bind_group,
+            compute_bind_group_layout,
+        )
+    }
+
+    fn load_assets(device: &wgpu::Device) -> (CellAssets, Buffer) {
+        let assets = import_assets().unwrap();
+        let mut palette = Palette {
+            values: [Rgba::RED; 16],
+        };
+        let assets_clone = assets.clone();
+        for i in 0..16 {
+            if let Some(color) = assets_clone.assets_color_vec.get(i) {
+                palette.values[i] = *color;
+            }
+        }
+
+        let colors_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Colors Buffer"),
+            contents: bytemuck::cast_slice(&[palette]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        (assets.clone(), colors_buffer)
+    }
+
+    fn init_render_pipeline(
+        device: &wgpu::Device,
+        config: wgpu::SurfaceConfiguration,
+        colors_buffer: &Buffer,
+    ) -> (RenderPipeline, BindGroup, Buffer) {
         let shader_file = {
             match fs::read_to_string("assets/shaders/shader.wgsl") {
                 Ok(str) => str,
@@ -143,6 +199,32 @@ impl<'a> State<'a> {
                 ],
                 label: Some("camera_bind_group_layout"),
             });
+
+        let camera_uniform = CameraUniform {
+            view_proj: Mat4::ZERO.to_cols_array_2d(),
+            position: Vec4::ZERO,
+        };
+
+        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Camera Buffer"),
+            contents: bytemuck::cast_slice(&[camera_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &camera_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: camera_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: colors_buffer.as_entire_binding(),
+                },
+            ],
+            label: Some("camera_colors_bind_group"),
+        });
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -193,6 +275,72 @@ impl<'a> State<'a> {
             multiview: None, // 5.
         });
 
+        (render_pipeline, camera_bind_group, camera_buffer)
+    }
+
+    // Creating some of the wgpu types requires async code
+    pub async fn new(window: Arc<Window>) -> Self {
+        let size = window.inner_size();
+
+        // The instance is a handle to our GPU
+        // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::PRIMARY,
+            ..Default::default()
+        });
+
+        // # Safety
+        //
+        // The surface needs to live as long as the window that created it.
+        // State owns the window, so this should be safe.
+        let surface = instance.create_surface(Arc::clone(&window)).unwrap();
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
+            })
+            .await
+            .unwrap();
+        info!("{:?}", adapter.get_info());
+
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    required_features: wgpu::Features::empty(),
+                    // WebGL doesn't support all of wgpu's features, so if
+                    // we're building for the web, we'll have to disable some.
+                    required_limits: wgpu::Limits::default(),
+
+                    label: None,
+                },
+                None, // Trace path
+            )
+            .await
+            .unwrap();
+
+        let surface_caps = surface.get_capabilities(&adapter);
+        // Shader code in this tutorial assumes an sRGB surface texture. Using a different
+        // one will result in all the colors coming out darker. If you want to support non
+        // sRGB surfaces, you'll need to account for that when drawing to the frame.
+        let surface_format = surface_caps
+            .formats
+            .iter()
+            .copied()
+            .find(|f| f.is_srgb())
+            .unwrap_or(surface_caps.formats[0]);
+        let config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
+            width: size.width,
+            height: size.height,
+            present_mode: surface_caps.present_modes[0],
+            alpha_mode: surface_caps.alpha_modes[0],
+            view_formats: vec![],
+            desired_maximum_frame_latency: Default::default(),
+        };
+        surface.configure(&device, &config);
+
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(VERTICES),
@@ -208,50 +356,15 @@ impl<'a> State<'a> {
         let num_vertices = VERTICES.len() as u32;
         let num_indices = INDICES.len() as u32;
 
-        let assets = import_assets().unwrap();
+        let (assets, colors_buffer) = State::load_assets(&device);
 
-        let mut palette = Palette {
-            values: [Rgba::RED; 16],
-        };
-        for i in 0..16 {
-            if let Some(color) = assets.assets_color_vec.get(i) {
-                palette.values[i] = *color;
-            }
-        }
+        let (render_pipeline, camera_bind_group, camera_buffer) =
+            State::init_render_pipeline(&device, config.clone(), &colors_buffer);
 
-        let world = World::init_world(assets);
+        let (compute_pipeline, compute_bind_group, compute_bind_layout) =
+            State::init_compute_pipeline(&device, size);
 
-        let colors_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Colors Buffer"),
-            contents: bytemuck::cast_slice(&[palette]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let camera_uniform = CameraUniform {
-            view_proj: Mat4::ZERO.to_cols_array_2d(),
-            position: Vec4::ZERO,
-        };
-
-        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &camera_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: camera_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: colors_buffer.as_entire_binding(),
-                },
-            ],
-            label: Some("camera_colors_bind_group"),
-        });
+        let world = World::init_world(assets.clone());
 
         let camera = Camera::create_camera_from_screen_size(
             size.width as f32,
@@ -261,8 +374,6 @@ impl<'a> State<'a> {
             0.0,
             Vec2::ZERO,
             camera_buffer,
-            camera_bind_group,
-            camera_bind_group_layout,
         );
 
         let instances = {
@@ -294,6 +405,9 @@ impl<'a> State<'a> {
             config,
             size,
             render_pipeline,
+            compute_pipeline,
+            compute_bind_group,
+            compute_bind_layout,
             vertex_buffer,
             index_buffer,
             num_vertices,
@@ -305,6 +419,7 @@ impl<'a> State<'a> {
             instance_buffer_len,
             mouse_position: Vec2::ZERO,
             colors_buffer,
+            camera_bind_group,
         }
     }
 
@@ -467,12 +582,21 @@ impl<'a> State<'a> {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.camera.camera_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instance_buffer_len as _);
+        }
+        {
+            let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("compute render"),
+                ..Default::default()
+            });
+
+            compute_pass.set_pipeline(&self.compute_pipeline);
+            compute_pass.set_bind_group(0, &self.compute_bind_group, &[])
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));

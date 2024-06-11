@@ -12,8 +12,6 @@ pub struct Camera {
     pub zoom_factor: f32,
     pub position: Vec2,
     pub camera_buffer: wgpu::Buffer,
-    pub camera_bind_group: wgpu::BindGroup,
-    pub camera_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 #[repr(C)]
@@ -34,8 +32,6 @@ impl Camera {
         mut zoom_factor: f32,
         position: Vec2,
         camera_buffer: wgpu::Buffer,
-        camera_bind_group: wgpu::BindGroup,
-        camera_bind_group_layout: wgpu::BindGroupLayout,
     ) -> Self {
         if zoom_factor == 0.0 {
             zoom_factor = 1.0;
@@ -55,8 +51,6 @@ impl Camera {
             zoom_factor,
             position,
             camera_buffer,
-            camera_bind_group,
-            camera_bind_group_layout,
         }
     }
 
@@ -89,8 +83,6 @@ impl Camera {
         zoom_factor: f32,
         position: Vec2,
         camera_buffer: wgpu::Buffer,
-        camera_bind_group: wgpu::BindGroup,
-        camera_bind_group_layout: wgpu::BindGroupLayout,
     ) -> Camera {
         let aspect = width / height;
         let left = -aspect / 2.0;
@@ -107,8 +99,6 @@ impl Camera {
             zoom_factor,
             position,
             camera_buffer,
-            camera_bind_group,
-            camera_bind_group_layout,
         )
     }
 
