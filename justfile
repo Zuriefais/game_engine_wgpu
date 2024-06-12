@@ -7,3 +7,5 @@ build_windows:
 
 build:
     cargo build --release
+
+clippy_all:
