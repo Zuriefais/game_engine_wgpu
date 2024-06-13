@@ -5,8 +5,8 @@ use log::info;
 use std::{fs, sync::Arc, time::Instant};
 use wgpu::{
     util::DeviceExt, BindGroup, BindGroupLayout, Buffer, ComputePipeline,
-    ComputePipelineDescriptor, RenderPipeline, Texture, TextureDescriptor,
-    TextureFormat, TextureUsages,
+    ComputePipelineDescriptor, Origin3d, RenderPipeline, SurfaceTexture, Texture,
+    TextureDescriptor, TextureFormat, TextureUsages,
 };
 use winit::{
     dpi::PhysicalSize,
@@ -35,6 +35,7 @@ pub struct State<'a> {
     pub compute_pipeline: wgpu::ComputePipeline,
     pub compute_bind_group: wgpu::BindGroup,
     pub compute_bind_layout: wgpu::BindGroupLayout,
+    pub compute_texture: Texture,
     pub vertex_buffer: Buffer,
     pub index_buffer: Buffer,
     pub num_vertices: u32,
@@ -51,8 +52,6 @@ pub struct State<'a> {
 
 impl<'a> State<'a> {
     fn create_screen_sized_texture(size: PhysicalSize<u32>, device: &wgpu::Device) -> Texture {
-        
-
         device.create_texture(&TextureDescriptor {
             label: Some("screen sized texture"),
             size: wgpu::Extent3d {
@@ -64,7 +63,9 @@ impl<'a> State<'a> {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: TextureFormat::Rgba8Unorm,
-            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::STORAGE_BINDING,
+            usage: TextureUsages::RENDER_ATTACHMENT
+                | TextureUsages::COPY_SRC
+                | TextureUsages::STORAGE_BINDING,
             view_formats: &[TextureFormat::Rgba8Unorm],
         })
     }
@@ -72,7 +73,7 @@ impl<'a> State<'a> {
     fn init_compute_pipeline(
         device: &wgpu::Device,
         size: PhysicalSize<u32>,
-    ) -> (ComputePipeline, BindGroup, BindGroupLayout) {
+    ) -> (ComputePipeline, BindGroup, BindGroupLayout, Texture) {
         let compute_shader_file = {
             match fs::read_to_string("assets/shaders/compute_render.wgsl") {
                 Ok(str) => str,
@@ -100,8 +101,8 @@ impl<'a> State<'a> {
                 }],
                 label: Some("out_texture_bind_group_layout"),
             });
-        let output = State::create_screen_sized_texture(size, device);
-        let view = output.create_view(&wgpu::TextureViewDescriptor::default());
+        let texture = State::create_screen_sized_texture(size, device);
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let compute_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &compute_bind_group_layout,
@@ -131,6 +132,7 @@ impl<'a> State<'a> {
             device.create_compute_pipeline(&compute_pipeline_desc),
             compute_bind_group,
             compute_bind_group_layout,
+            texture,
         )
     }
 
@@ -323,14 +325,15 @@ impl<'a> State<'a> {
         // Shader code in this tutorial assumes an sRGB surface texture. Using a different
         // one will result in all the colors coming out darker. If you want to support non
         // sRGB surfaces, you'll need to account for that when drawing to the frame.
-        let surface_format = surface_caps
-            .formats
-            .iter()
-            .copied()
-            .find(|f| f.is_srgb())
-            .unwrap_or(surface_caps.formats[0]);
+        let surface_format = TextureFormat::Rgba8Unorm;
+        //surface_caps
+        //     .formats
+        //     .iter()
+        //     .copied()
+        //     .find(|f| f.is_srgb())
+        //     .unwrap_or(surface_caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
             format: surface_format,
             width: size.width,
             height: size.height,
@@ -361,7 +364,7 @@ impl<'a> State<'a> {
         let (render_pipeline, camera_bind_group, camera_buffer) =
             State::init_render_pipeline(&device, config.clone(), &colors_buffer);
 
-        let (compute_pipeline, compute_bind_group, compute_bind_layout) =
+        let (compute_pipeline, compute_bind_group, compute_bind_layout, compute_texture) =
             State::init_compute_pipeline(&device, size);
 
         let world = World::init_world(assets.clone());
@@ -408,6 +411,7 @@ impl<'a> State<'a> {
             compute_pipeline,
             compute_bind_group,
             compute_bind_layout,
+            compute_texture,
             vertex_buffer,
             index_buffer,
             num_vertices,
@@ -423,7 +427,7 @@ impl<'a> State<'a> {
         }
     }
 
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
             self.config.width = new_size.width;
@@ -432,6 +436,7 @@ impl<'a> State<'a> {
             self.camera
                 .update_matrix_from_screen_size(self.size.width as f32, self.size.height as f32);
             self.camera.update_camera_buffer(&self.queue);
+            self.compute_texture = State::create_screen_sized_texture(new_size, &self.device)
         }
     }
 
@@ -598,6 +603,26 @@ impl<'a> State<'a> {
             compute_pass.set_pipeline(&self.compute_pipeline);
             compute_pass.set_bind_group(0, &self.compute_bind_group, &[])
         }
+
+        encoder.copy_texture_to_texture(
+            wgpu::ImageCopyTextureBase {
+                texture: &self.compute_texture,
+                mip_level: 0,
+                origin: Origin3d { x: 0, y: 0, z: 0 },
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::ImageCopyTexture {
+                texture: &output.texture,
+                mip_level: 0,
+                origin: Origin3d::default(),
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d {
+                width: output.texture.width(),
+                height: output.texture.height(),
+                depth_or_array_layers: 1,
+            },
+        );
 
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
