@@ -126,6 +126,7 @@ impl<'a> State<'a> {
             module: &compute_shader,
             entry_point: "main",
             compilation_options: Default::default(),
+            cache: Default::default(),
         };
 
         (
@@ -274,7 +275,8 @@ impl<'a> State<'a> {
                 mask: !0,                         // 3.
                 alpha_to_coverage_enabled: false, // 4.
             },
-            multiview: None, // 5.
+            multiview: None,
+            cache: Default::default(), // 5.
         });
 
         (render_pipeline, camera_bind_group, camera_buffer)
@@ -315,6 +317,7 @@ impl<'a> State<'a> {
                     required_limits: wgpu::Limits::default(),
 
                     label: None,
+                    memory_hints: Default::default(),
                 },
                 None, // Trace path
             )
