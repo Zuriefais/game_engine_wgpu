@@ -4,17 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-winit = "0.30"
+winit = "0.30.4"
 env_logger = "0.11.3"
 log = "0.4"
 wgpu = { version = "22", features = ["glsl"] }
 pollster = "0.3.0"
 glam = { version = "0.28.0", features = ["bytemuck"] }
-bytemuck = { version = "1.14.3", features = ["derive"] }
-hashbrown = { version = "0.14.3", features = ["serde", "rayon"] }
+bytemuck = { version = "1.16.1", features = ["derive"] }
+hashbrown = { version = "0.14.5", features = ["serde", "rayon"] }
 serde = { version = "*", features = ["derive"] }
 serde_derive = "*"
-ron = "0.8.1"
+ron = "*"
 lazy_static = "1.4.0"
 color-hex = "*"
 ecolor = { features = [
@@ -31,4 +31,11 @@ rayon = "1.10.0"
 rustflags = ["-Z", "threads=8"]
 
 [target.x86_64-unknown-linux-gnu]
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+rustflags = [
+    "-C",
+    "linker=clang",
+    "-C",
+    "link-arg=-fuse-ld=mold",
+    "-Z",
+    "threads=8",
+]
