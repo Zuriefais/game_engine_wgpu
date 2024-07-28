@@ -5,8 +5,8 @@ use log::info;
 use std::{fs, sync::Arc, time::Instant};
 use wgpu::{
     util::DeviceExt, BindGroup, BindGroupLayout, Buffer, ComputePipeline,
-    ComputePipelineDescriptor, Origin3d, RenderPipeline, SurfaceTexture, Texture,
-    TextureDescriptor, TextureFormat, TextureUsages,
+    ComputePipelineDescriptor, Origin3d, RenderPipeline, Texture, TextureDescriptor, TextureFormat,
+    TextureUsages,
 };
 use winit::{
     dpi::PhysicalSize,
@@ -621,8 +621,8 @@ impl<'a> State<'a> {
                 aspect: wgpu::TextureAspect::All,
             },
             wgpu::Extent3d {
-                width: output.texture.width(),
-                height: output.texture.height(),
+                width: 0,
+                height: 0,
                 depth_or_array_layers: 1,
             },
         );
